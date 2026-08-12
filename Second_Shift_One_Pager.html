@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Second Shift One Pager</title>
+  <style>
+    :root {
+      --ink: #1a2332;
+      --muted: #5a6577;
+      --line: #d8dee8;
+      --accent: #1e5f8a;
+      --soft: #f4f7fb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: #e8edf3;
+      line-height: 1.38;
+    }
+    .page {
+      max-width: 800px;
+      margin: 24px auto;
+      background: #fff;
+      padding: 28px 36px 24px;
+      box-shadow: 0 8px 28px rgba(26, 35, 50, 0.12);
+    }
+    header {
+      border-bottom: 3px solid var(--accent);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 { font-size: 26px; letter-spacing: -0.03em; margin-top: 2px; }
+    .tagline {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-style: italic;
+    }
+    h2 {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 11px 0 5px;
+    }
+    p, li { font-size: 12.5px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+    .box {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    ul { padding-left: 18px; }
+    li { margin-bottom: 3px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 5px 7px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .step {
+      background: var(--accent);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .arrow { color: var(--accent); font-weight: 700; }
+    .close {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    @page { size: A4; margin: 12mm; }
+    @media print {
+      body { background: #fff; }
+      .page { margin: 0; box-shadow: none; max-width: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header>
+      <div class="kicker">Hackathon one-pager · Dementia at home · UK</div>
+      <h1>Second Shift</h1>
+      <p class="tagline">Turns two weeks of exhaustion into one page of evidence.</p>
+    </header>
+
+    <h2>What it is</h2>
+    <p>
+      A <strong>voice-first AI agent for unpaid family carers of people with dementia</strong>.
+      Speak naturally at home. It logs care events, spots missed-medicine and symptom patterns,
+      and auto-generates an <strong>evidence-cited GP / memory-clinic brief</strong>.
+    </p>
+
+    <h2>The user</h2>
+    <p>
+      <strong>Ravi, 34</strong>, works night shifts and cares for his 71-year-old father, who has dementia and takes 6 medicines.
+      He is untrained, exhausted, and the only person who knows what happened at home this week.
+      At the GP appointment, he forgets half of it.
+    </p>
+
+    <div class="grid" style="margin-top: 6px;">
+      <div>
+        <h2>Why it matters</h2>
+        <ul>
+          <li>~982,000 people with dementia in the UK</li>
+          <li>Unpaid care is 50% of dementia’s £42bn cost</li>
+          <li>A third of dementia carers give 100+ hours a week</li>
+          <li>Home observations rarely reach the GP</li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <div class="flow" style="margin-bottom: 10px;">
+          <span class="step">Voice</span><span class="arrow">→</span>
+          <span class="step">Log</span><span class="arrow">→</span>
+          <span class="step">Patterns</span><span class="arrow">→</span>
+          <span class="step">GP brief</span>
+        </div>
+        <p>
+          The carer speaks → speech-to-text → AI extracts structured events →
+          a rules engine flags patterns → one tap produces a cited PDF for the GP or memory clinic.
+        </p>
+      </div>
+    </div>
+
+    <h2>What’s novel</h2>
+    <p style="margin-bottom: 8px;">
+      No UK product found that connects
+      <strong>what the dementia carer observes at home</strong> to
+      <strong>what the GP reads before the appointment</strong>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Covers</th>
+          <th>Missing vs. Second Shift</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Jointly (Carers UK)</td>
+          <td>Circle of care, tasks, medicine lists</td>
+          <td>Tap-based; no voice logging, patterns, or GP brief</td>
+        </tr>
+        <tr>
+          <td>Share2Care (NHS WY)</td>
+          <td>Carer app, meds, contingency plan in NHS record</td>
+          <td>Organisation tool, not voice → patterns → GP brief</td>
+        </tr>
+        <tr>
+          <td>Heidi / Tortus / Accurx</td>
+          <td>AI scribe of the GP appointment</td>
+          <td>Knows nothing about what happened at home</td>
+        </tr>
+        <tr>
+          <td>Curendi (NHS CEP)</td>
+          <td>Dementia carer guidance between appointments</td>
+          <td>Advice and diaries, not voice → patterns → GP brief</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid" style="margin-top: 8px;">
+      <div class="box">
+        <strong>Four novelty points</strong>
+        <ul style="margin-top: 6px;">
+          <li>Home → GP closed loop</li>
+          <li>Voice-first for the carer, not the patient</li>
+          <li>Evidence-cited briefs (every line traces to a voice log)</li>
+          <li>Family handover briefs (“your sister takes over tomorrow”)</li>
+        </ul>
+      </div>
+      <div class="box">
+        <strong>Safety stance</strong>
+        <p style="margin-top: 6px;">
+          Organises notes and drafts questions for the GP.
+          Never diagnoses, triages, or gives treatment advice.
+          Not a medical device.
+        </p>
+      </div>
+    </div>
+
+    <h2>The 30-second demo</h2>
+    <p>
+      11pm. Ravi says: <em>“Gave dad his 8pm meds, 40 minutes late. More confused again this evening, third time this week.”</em>
+      The agent logs it, flags the pattern after Tuesday’s dose change, and generates a one-page brief
+      with timestamps, symptoms, and 5 questions for the GP.
+    </p>
+
+    <p class="close">Ravi walks into the appointment with evidence instead of exhaustion.</p>
+    <p class="note">Beachhead: dementia at home. Later: stroke, Parkinson’s, frailty. Synthetic demo data. Not a medical device.<br>Contact: buabengabena174@gmail.com</p>
+  </article>
+</body>
+</html>
