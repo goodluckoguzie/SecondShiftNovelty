@@ -4,11 +4,54 @@
 
 A voice-first AI agent for **unpaid family carers of people with dementia in the UK**. The carer speaks naturally at home. Second Shift logs what happened, spots missed-medicine and symptom patterns, and generates an **evidence-cited GP / memory-clinic brief**.
 
-This repository is the research pack and proposed-product design for a hackathon build. It is **not a medical device**. It organises notes and drafts questions for the GP. It does not diagnose, triage, or give treatment advice.
+**Start here:** [GUIDE.md](GUIDE.md) — section-by-section explanation of the research, the app, how to run it, and how to demo it.
+
+This repository contains the research pack **and a working local app**. It is **not a medical device**. It organises notes and drafts questions for the GP. It does not diagnose, triage, or give medical advice.
 
 ![Proposed product: voice log, timeline, pattern chart, and GP brief](docs/images/proposed-work.png)
 
-*Proposed work: Talk → Timeline → Patterns → GP brief. Mockups of the four screens we intend to demo.*
+*Talk → Timeline → Patterns → GP brief.*
+
+---
+
+## Run the app
+
+Uses conda env **`secondshift`**, local **OpenAI Whisper** (`faster-whisper` weights), and **Ollama**.
+
+```bash
+conda activate secondshift
+# first time:
+# conda env create -f environment.yml
+# cd frontend && npm install && cd ..
+# ollama serve   # other terminal
+# ollama pull llama3.2:3b
+
+cd backend
+PYTHONPATH=. uvicorn app.main:app --reload --port 8000
+```
+
+In another terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open http://127.0.0.1:5173
+
+- Type the Ravi line if the mic is unavailable (text fallback).
+- Chrome is the demo browser (mic + SpeechSynthesis).
+
+### Tests
+
+```bash
+conda activate secondshift
+./scripts/verify_all.sh
+```
+
+Unit tests do not need Ollama. Live extraction: `python -m pytest tests/ -m live` with `ollama serve` and `llama3.2:3b` pulled.
+
+On this machine Whisper uses CUDA then unloads so Ollama can use the 4GB GTX 1650. If JSON quality is weak, run `ollama pull qwen2.5:7b` and set `OLLAMA_MODEL=qwen2.5:7b` (CPU is fine).
 
 ---
 
@@ -79,15 +122,15 @@ flowchart LR
   C --> H[Short confirmation reply]
 ```
 
-| Layer | Role | Hackathon choice |
+| Layer | Role | This build |
 |---|---|---|
-| Frontend | Talk, timeline, patterns, brief | React + Vite + Tailwind, mobile-first |
-| Speech | Mic → transcript | Whisper API, Web Speech API fallback |
-| Extractor | Free speech → typed events | LLM JSON / tool calling |
+| Frontend | Talk, timeline, patterns, brief | React + Vite + Tailwind |
+| Speech in | Mic → transcript | Local Whisper `small` via faster-whisper |
+| Extractor | Free speech → typed events | Ollama `llama3.2:3b` JSON (heuristic fallback) |
 | Database | Append-only care log | SQLite |
 | Patterns | Late doses, recurrence, dose-change clusters | Deterministic rules, not the LLM |
-| Brief | Markdown → PDF with citations | HTML template → PDF |
-| Voice reply | Optional | Browser SpeechSynthesis |
+| Brief | Markdown → PDF with citations | Python + fpdf2 |
+| Voice reply | Short confirmations | Browser SpeechSynthesis |
 
 **Hard split:** the LLM never counts “how many times this week.” The pattern engine does. That is the safety and trust design.
 
@@ -146,6 +189,12 @@ Printable A4: [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) · HTML s
 
 | File | What it is |
 |---|---|
+| [GUIDE.md](GUIDE.md) | Section-by-section guide to what was built |
+| [backend/](backend/) | FastAPI, SQLite, Whisper, Ollama, rules, PDF |
+| [frontend/](frontend/) | Talk, Timeline, Patterns, Brief |
+| [tests/](tests/) | pytest gates for phases 0–4 |
+| [scripts/verify_all.sh](scripts/verify_all.sh) | Full verification |
+| [environment.yml](environment.yml) | conda env `secondshift` |
 | [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md) | Research broken into build phases 0–5 |
 | [Second_Shift_Novelty_Research.md](Second_Shift_Novelty_Research.md) | UK competitive and academic research |
 | [Second_Shift_Engineering_Spec.docx](Second_Shift_Engineering_Spec.docx) | Build spec: data model, prompts, stack |
@@ -170,7 +219,7 @@ Full detail: [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md)
 
 If behind at hour 24: skip handover; keep voice → pattern → brief. That closed loop is the win.
 
-Stack: React + Vite + Tailwind · FastAPI · SQLite · Whisper · Recharts · weasyprint or browser print-to-PDF.
+This build uses React + Vite + Tailwind, FastAPI, SQLite, local Whisper, Ollama, Recharts, and fpdf2.
 
 ---
 
