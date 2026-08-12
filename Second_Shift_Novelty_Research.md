@@ -1,8 +1,6 @@
 # Second Shift — UK Novelty & Competitive Research Report
 *Is a voice-first AI agent for unpaid family carers novel in the UK? Verdict: the integrated concept is novel; individual slices exist. Details below.*
 
-**Contact:** [buabengabena174@gmail.com](mailto:buabengabena174@gmail.com)
-
 ## Executive summary
 
 - **No equivalent UK product exists** that closes the full loop for **dementia care at home**: voice-first logging → missed-medicine / symptom pattern detection → escalation prompts → auto-generated, evidence-cited GP / memory-clinic brief.
