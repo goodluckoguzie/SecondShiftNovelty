@@ -1,0 +1,15 @@
+# Optional NVIDIA GPU for Ollama (KickHub-style).
+# Use only if nvidia-docker is installed:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all

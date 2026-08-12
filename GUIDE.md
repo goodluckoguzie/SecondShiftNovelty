@@ -87,6 +87,8 @@ This machine has a **GTX 1650 (4GB VRAM)**. Whisper runs on the GPU, then unload
 | `frontend/` | Four screens: Talk, Timeline, Patterns, Brief |
 | `tests/` | Automated checks for each phase |
 | `scripts/verify_all.sh` | Runs those checks in one go |
+| `run.sh` | One command: Docker build, start, smoke test |
+| `docker-compose.yml` | API + website + Ollama |
 | `environment.yml` | conda env named `secondshift` |
 | `docs/` | Mockup images and HTML one-pager art |
 | `IMPLEMENTATION_PHASES.md` | Original phase plan |
@@ -230,6 +232,21 @@ PDF is built with `fpdf2` (no extra system libraries). Download: `GET /briefs/la
 
 ## 6. How to run (correct folders)
 
+### Docker (recommended)
+
+One script starts the API, the website, and Ollama, then checks the closed loop:
+
+```bash
+cd /home/goodluck/Desktop/MyProjects/Tutorial/SecondShiftNovelty
+./run.sh
+```
+
+Open **http://127.0.0.1:8080**. Stop with `docker compose down`.
+
+The first run downloads images and `llama3.2:3b`. Typed logging still works if the model pull is still going.
+
+### Conda (without Docker)
+
 Port 8000 may already be used by another project. Use **8001** if you see “Address already in use”.
 
 You must be in **this** repo, not `~/backend`.
@@ -309,6 +326,8 @@ Those stay on the pitch slide only.
 | Whisper error | Type the sentence. First Whisper run may download the `small` model |
 | Ollama not found | Install Ollama later; heuristic + typed log still demo the loop |
 | Empty page | Start **both** terminals; API first, then frontend |
+| Docker build is slow | First `./run.sh` installs Whisper/torch. Later runs reuse the image |
+| `./run.sh` API timeout | `docker compose logs --tail=80 api` |
 
 ---
 

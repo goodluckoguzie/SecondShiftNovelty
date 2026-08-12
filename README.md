@@ -16,7 +16,15 @@ This repository contains the research pack **and a working local app**. It is **
 
 ## Run the app
 
-Uses conda env **`secondshift`**, local **OpenAI Whisper** (`faster-whisper` weights), and **Ollama**.
+**Docker (one script):**
+
+```bash
+./run.sh
+```
+
+That builds and starts the API, the website, and Ollama. Open **http://127.0.0.1:8080**. Stop with `docker compose down`.
+
+**Without Docker** (conda env **`secondshift`**, local Whisper, host Ollama):
 
 ```bash
 conda activate secondshift
@@ -27,14 +35,14 @@ conda activate secondshift
 # ollama pull llama3.2:3b
 
 cd backend
-PYTHONPATH=. uvicorn app.main:app --reload --port 8000
+PYTHONPATH=. uvicorn app.main:app --reload --port 8001
 ```
 
 In another terminal:
 
 ```bash
 cd frontend
-npm run dev
+VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ```
 
 Open http://127.0.0.1:5173
