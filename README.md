@@ -146,25 +146,29 @@ Printable A4: [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) · HTML s
 
 | File | What it is |
 |---|---|
+| [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md) | Research broken into build phases 0–5 |
 | [Second_Shift_Novelty_Research.md](Second_Shift_Novelty_Research.md) | UK competitive and academic research |
-| [Second_Shift_Engineering_Spec.docx](Second_Shift_Engineering_Spec.docx) | Build spec: data model, prompts, 48-hour plan |
+| [Second_Shift_Engineering_Spec.docx](Second_Shift_Engineering_Spec.docx) | Build spec: data model, prompts, stack |
 | [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) | One-page pitch |
 | [docs/proposed-work.html](docs/proposed-work.html) | Interactive mockup of the four screens |
 | [docs/images/](docs/images/) | Screenshots used in this README |
 
 ---
 
-## 48-hour build sketch
+## Implementation phases (summary)
 
-| Hours | Milestone |
-|---|---|
-| 0–4 | Repo, schema, seed data, STT spike |
-| 4–10 | Transcript → JSON events → timeline |
-| 10–16 | Pattern engine + spoken confirmation |
-| 16–24 | Walking skeleton of the full role-play |
-| 24–32 | Brief → PDF, pattern chart, voice polish |
-| 32–40 | Family handover brief, guardrails, fallbacks |
-| 40–48 | Rehearse ≥5×, backup video, slides |
+Full detail: [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md)
+
+| Phase | Hours | Goal |
+|---|---|---|
+| **0 Foundations** | 0–4 | Repo, dementia seed data, STT spike, disclaimer |
+| **1 Voice → log** | 4–10 | Speech/text → structured events → Timeline |
+| **2 Pattern engine** | 10–16 | Rules flag late doses + confusion after dose change |
+| **3 GP brief** | 16–24 | Evidence-cited PDF (close the home → GP loop) |
+| **4 Polish** | 24–40 | Chart, safety, fallbacks, optional handover brief |
+| **5 Pitch only** | — | Multi-carer, NHS write-back, local LLM — do not build |
+
+If behind at hour 24: skip handover; keep voice → pattern → brief. That closed loop is the win.
 
 Stack: React + Vite + Tailwind · FastAPI · SQLite · Whisper · Recharts · weasyprint or browser print-to-PDF.
 
