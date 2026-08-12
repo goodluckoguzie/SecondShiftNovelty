@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <title>Second Shift proposed work</title>
+  <style>
+    :root {
+      --ink: #1a2332;
+      --muted: #5a6577;
+      --line: #d5dde8;
+      --accent: #1e5f8a;
+      --accent-2: #2a7aad;
+      --soft: #f4f7fb;
+      --ok: #1f7a4d;
+      --warn: #b45309;
+      --phone: #111827;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #e8edf3;
+      color: var(--ink);
+    }
+    .board {
+      width: 1400px;
+      padding: 36px 40px 40px;
+      background: linear-gradient(180deg, #eef3f8 0%, #e8edf3 100%);
+    }
+    .kicker {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 { font-size: 34px; margin: 4px 0 6px; letter-spacing: -0.03em; }
+    .sub { color: var(--muted); font-size: 16px; margin-bottom: 28px; }
+    h2 {
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 28px 0 14px;
+    }
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .node {
+      flex: 1;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 14px 12px;
+    }
+    .node b { display: block; font-size: 15px; margin-bottom: 4px; color: var(--accent); }
+    .node p { font-size: 13px; color: var(--muted); line-height: 1.4; }
+    .arrow {
+      display: flex;
+      align-items: center;
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .phones {
+      display: flex;
+      gap: 22px;
+      justify-content: space-between;
+    }
+    .col { width: 300px; }
+    .label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    .phone {
+      width: 300px;
+      height: 620px;
+      background: #fff;
+      border: 10px solid var(--phone);
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(26,35,50,0.16);
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      height: 28px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 18px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .appbar {
+      padding: 8px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .appbar .who { font-size: 11px; color: var(--muted); }
+    .appbar h3 { font-size: 17px; }
+    .body { flex: 1; padding: 14px 16px; overflow: hidden; background: var(--soft); }
+    .nav {
+      display: flex;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .nav span {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      padding: 10px 0 12px;
+      color: var(--muted);
+    }
+    .nav .on { color: var(--accent); font-weight: 700; }
+    .mic {
+      width: 118px;
+      height: 118px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      margin: 18px auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      box-shadow: 0 10px 24px rgba(30,95,138,0.35);
+    }
+    .hint { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .bubble {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .bubble.agent { border-left: 4px solid var(--accent); }
+    .chip {
+      display: inline-block;
+      background: #e8f1f8;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin: 0 4px 4px 0;
+    }
+    .event {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .event .t { font-size: 11px; color: var(--muted); }
+    .event b { font-size: 13.5px; display: block; margin: 2px 0; }
+    .event p { font-size: 12px; color: var(--muted); }
+    .flag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--warn);
+      margin-top: 4px;
+    }
+    .chart {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      height: 210px;
+      position: relative;
+    }
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      height: 140px;
+      gap: 8px;
+      padding-top: 20px;
+    }
+    .bar {
+      flex: 1;
+      background: #c5d8e8;
+      border-radius: 6px 6px 0 0;
+      position: relative;
+    }
+    .bar.hit { background: var(--accent); }
+    .bar .n {
+      position: absolute;
+      top: -18px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .days {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .days span { flex: 1; text-align: center; }
+    .vline {
+      position: absolute;
+      top: 28px;
+      bottom: 38px;
+      width: 2px;
+      background: var(--warn);
+      left: 42%;
+    }
+    .vline i {
+      position: absolute;
+      top: -16px;
+      left: -28px;
+      font-size: 10px;
+      color: var(--warn);
+      font-style: normal;
+      font-weight: 700;
+      width: 70px;
+    }
+    .callout {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.35;
+    }
+    .brief {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .brief h4 { font-size: 13px; margin-bottom: 6px; }
+    .brief li { margin-left: 14px; margin-bottom: 3px; }
+    .cite { color: var(--accent); font-size: 10px; }
+    .btn {
+      display: block;
+      text-align: center;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .legend { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="board" id="board">
+    <div class="kicker">Proposed product · UK dementia care at home</div>
+    <h1>Second Shift</h1>
+    <p class="sub">Voice-first AI for unpaid family carers. Turns two weeks of exhaustion into one page of evidence for the GP.</p>
+
+    <h2>Closed loop</h2>
+    <div class="flow">
+      <div class="node"><b>1. Voice at home</b><p>Carer speaks naturally at 11pm. No forms. No tapping through menus.</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>2. Structured log</b><p>Speech becomes typed events: medicine, confusion, meal, sleep, mood.</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>3. Pattern engine</b><p>Rules flag late doses, recurring confusion, and clusters after a dose change.</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>4. GP / memory-clinic brief</b><p>One-page PDF. Every line cites the voice-log timestamp it came from.</p></div>
+    </div>
+
+    <h2>Proposed screens</h2>
+    <div class="phones">
+      <div class="col">
+        <div class="label">1. Talk</div>
+        <div class="phone">
+          <div class="status"><span>21:02</span><span>Second Shift</span></div>
+          <div class="appbar">
+            <div class="who">Caring for Dad · dementia</div>
+            <h3>Talk</h3>
+          </div>
+          <div class="body">
+            <div class="mic">●</div>
+            <p class="hint">Hold to speak</p>
+            <div class="bubble">“Gave dad his 8pm meds, 40 minutes late. More confused again this evening, third time this week.”</div>
+            <div class="bubble agent">
+              Logged evening medicines at 20:40, late. Confusion noted.
+              <div style="margin-top:8px">
+                <span class="chip">medicine · late</span>
+                <span class="chip">confusion ×3</span>
+              </div>
+              <p style="margin-top:8px;color:#1e5f8a;font-weight:600">Third confusion episode since Friday’s dose change. Flagged for the GP brief.</p>
+            </div>
+          </div>
+          <div class="nav"><span class="on">Talk</span><span>Timeline</span><span>Patterns</span><span>Brief</span></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="label">2. Timeline</div>
+        <div class="phone">
+          <div class="status"><span>21:02</span><span>Second Shift</span></div>
+          <div class="appbar">
+            <div class="who">Last 7 days</div>
+            <h3>Care log</h3>
+          </div>
+          <div class="body">
+            <div class="event">
+              <div class="t">Tue 11 Aug · 20:40</div>
+              <b>Evening medicines · 40 min late</b>
+              <p>“Gave dad his 8pm meds, 40 minutes late.”</p>
+            </div>
+            <div class="event">
+              <div class="t">Tue 11 Aug · 20:45</div>
+              <b>Confusion · evening</b>
+              <p>“More confused again this evening, third time this week.”</p>
+              <div class="flag">Pattern: 3× in 7 days</div>
+            </div>
+            <div class="event">
+              <div class="t">Tue 11 Aug · 19:10</div>
+              <b>Meal · low appetite</b>
+              <p>“Barely touched dinner.”</p>
+            </div>
+            <div class="event">
+              <div class="t">Mon 10 Aug · 21:05</div>
+              <b>Confusion · evening</b>
+              <p>“Didn’t recognise me for a few minutes.”</p>
+            </div>
+            <div class="event">
+              <div class="t">Sun 9 Aug · 20:50</div>
+              <b>Confusion · evening</b>
+              <p>“Agitated after the new tablet.”</p>
+            </div>
+          </div>
+          <div class="nav"><span>Talk</span><span class="on">Timeline</span><span>Patterns</span><span>Brief</span></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="label">3. Patterns</div>
+        <div class="phone">
+          <div class="status"><span>21:02</span><span>Second Shift</span></div>
+          <div class="appbar">
+            <div class="who">Confusion episodes</div>
+            <h3>7-day pattern</h3>
+          </div>
+          <div class="body">
+            <div class="chart">
+              <div class="vline" style="left:36%"><i>dose change</i></div>
+              <div class="bars">
+                <div class="bar" style="height:12%"><span class="n">0</span></div>
+                <div class="bar" style="height:12%"><span class="n">0</span></div>
+                <div class="bar hit" style="height:55%"><span class="n">1</span></div>
+                <div class="bar hit" style="height:55%"><span class="n">1</span></div>
+                <div class="bar" style="height:12%"><span class="n">0</span></div>
+                <div class="bar hit" style="height:90%"><span class="n">1</span></div>
+                <div class="bar hit" style="height:90%"><span class="n">1</span></div>
+              </div>
+              <div class="days">
+                <span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span><span>Mon</span><span>Tue</span>
+              </div>
+            </div>
+            <div class="callout">Confusion episodes clustered after Friday’s donepezil dose change. Two evening doses logged late.</div>
+            <p class="legend">The LLM describes this. A rules engine counts it. That split is the safety design.</p>
+          </div>
+          <div class="nav"><span>Talk</span><span>Timeline</span><span class="on">Patterns</span><span>Brief</span></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="label">4. GP brief</div>
+        <div class="phone">
+          <div class="status"><span>21:02</span><span>Second Shift</span></div>
+          <div class="appbar">
+            <div class="who">Memory clinic · 14 Aug</div>
+            <h3>Visit brief</h3>
+          </div>
+          <div class="body">
+            <div class="brief">
+              <h4>Dad, 71 · dementia</h4>
+              <p><b>Medicines this week</b></p>
+              <ul>
+                <li>Evening dose late ×2 <span class="cite">[log 11 Aug 20:40]</span></li>
+                <li>Donepezil changed Fri 7 Aug</li>
+              </ul>
+              <p style="margin-top:6px"><b>Symptoms</b></p>
+              <ul>
+                <li>Evening confusion ×3 since dose change <span class="cite">[9, 10, 11 Aug]</span></li>
+                <li>Low appetite ×4 evenings</li>
+              </ul>
+              <p style="margin-top:6px"><b>Questions to ask</b></p>
+              <ul>
+                <li>Could evening confusion relate to the 7 Aug dose change?</li>
+                <li>Is late evening dosing reducing effect?</li>
+              </ul>
+            </div>
+            <div class="btn">Download PDF for GP</div>
+          </div>
+          <div class="nav"><span>Talk</span><span>Timeline</span><span>Patterns</span><span class="on">Brief</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
