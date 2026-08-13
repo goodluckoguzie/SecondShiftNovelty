@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import Iterable, Optional
 
 from sqlmodel import Session, select
 
@@ -17,58 +17,29 @@ def _in_window(events: Iterable[CareEvent], days: int = 7) -> list[CareEvent]:
     return [e for e in items if e.event_time >= start]
 
 
-def recompute_flags(session: Session) -> list[PatternFlag]:
-    existing = session.exec(select(PatternFlag)).all()
-    for row in existing:
+def _ids(events: list[CareEvent]) -> str:
+    return ",".join(str(e.id) for e in events if e.id is not None)
+
+
+def recompute_flags(session: Session, person_id: Optional[int] = None) -> list[PatternFlag]:
+    query = select(PatternFlag)
+    if person_id is not None:
+        query = query.where(PatternFlag.person_id == person_id)
+    for row in session.exec(query).all():
         session.delete(row)
     session.commit()
 
-    events = session.exec(select(CareEvent)).all()
-    meds = session.exec(select(MedicationSchedule)).all()
-    window = _in_window(events)
+    people: list[Optional[int]]
+    if person_id is not None:
+        people = [person_id]
+    else:
+        ids = {e.person_id for e in session.exec(select(CareEvent)).all()}
+        people = list(ids) or [None]
+
     now = datetime.utcnow()
     flags: list[PatternFlag] = []
-
-    late = [e for e in window if e.type == "medication" and e.subtype in ("dose_late", "dose_missed")]
-    if len(late) >= 2:
-        flags.append(
-            PatternFlag(
-                created_at=now,
-                kind="late_or_missed_doses",
-                subtype="medication",
-                message=f"{len(late)} late or missed evening doses in the last 7 days.",
-            )
-        )
-
-    confusions = [e for e in window if e.type == "symptom" and e.subtype == "confusion"]
-    if len(confusions) >= 3:
-        change = next((m.last_changed_at for m in meds if m.last_changed_at), None)
-        related = change
-        extra = ""
-        if change and min(e.event_time for e in confusions) >= change:
-            extra = f" Episodes began after the dose change on {change.strftime('%d %b')}."
-            related = change
-        flags.append(
-            PatternFlag(
-                created_at=now,
-                kind="symptom_recurrence",
-                subtype="confusion",
-                message=f"Confusion logged {len(confusions)} times in 7 days.{extra}",
-                related_date=related,
-            )
-        )
-
-    appetite = [e for e in window if e.subtype == "appetite_low"]
-    if len(appetite) >= 4:
-        flags.append(
-            PatternFlag(
-                created_at=now,
-                kind="declining_trend",
-                subtype="appetite_low",
-                message=f"Low appetite noted {len(appetite)} times in 7 days.",
-            )
-        )
-
+    for pid in people:
+        flags.extend(_flags_for_person(session, pid, now))
     session.add_all(flags)
     session.commit()
     for flag in flags:
@@ -76,9 +47,114 @@ def recompute_flags(session: Session) -> list[PatternFlag]:
     return flags
 
 
-def chart_payload(session: Session) -> dict:
-    events = session.exec(select(CareEvent)).all()
-    meds = session.exec(select(MedicationSchedule)).all()
+def _flags_for_person(session: Session, person_id: Optional[int], now: datetime) -> list[PatternFlag]:
+    event_q = select(CareEvent)
+    med_q = select(MedicationSchedule)
+    if person_id is not None:
+        event_q = event_q.where(CareEvent.person_id == person_id)
+        med_q = med_q.where(MedicationSchedule.person_id == person_id)
+    events = session.exec(event_q).all()
+    meds = session.exec(med_q).all()
+    window7 = _in_window(events, 7)
+    window14 = _in_window(events, 14)
+    flags: list[PatternFlag] = []
+
+    late = [e for e in window7 if e.type == "medication" and e.subtype in ("dose_late", "dose_missed")]
+    if len(late) >= 2:
+        flags.append(
+            PatternFlag(
+                person_id=person_id,
+                created_at=now,
+                kind="late_or_missed_doses",
+                subtype="medication",
+                message=f"{len(late)} late or missed evening doses in the last 7 days.",
+                evidence_event_ids=_ids(late),
+            )
+        )
+
+    confusions = [e for e in window7 if e.type == "symptom" and e.subtype == "confusion"]
+    if len(confusions) >= 3:
+        change = next((m.last_changed_at for m in meds if m.last_changed_at), None)
+        extra = ""
+        related = change
+        if change and min(e.event_time for e in confusions) >= change:
+            extra = f" Episodes began after the dose change on {change.strftime('%d %b')}."
+        flags.append(
+            PatternFlag(
+                person_id=person_id,
+                created_at=now,
+                kind="symptom_recurrence",
+                subtype="confusion",
+                message=f"Confusion logged {len(confusions)} times in 7 days.{extra}",
+                related_date=related,
+                evidence_event_ids=_ids(confusions),
+            )
+        )
+
+    appetite = [e for e in window7 if e.subtype == "appetite_low"]
+    if len(appetite) >= 4:
+        flags.append(
+            PatternFlag(
+                person_id=person_id,
+                created_at=now,
+                kind="declining_trend",
+                subtype="appetite_low",
+                message=f"Low appetite noted {len(appetite)} times in 7 days.",
+                evidence_event_ids=_ids(appetite),
+            )
+        )
+
+    vomits = [e for e in window14 if e.subtype == "vomiting"]
+    if len(vomits) >= 2:
+        dates = ", ".join(sorted({e.event_time.strftime("%d %b") for e in vomits}))
+        flags.append(
+            PatternFlag(
+                person_id=person_id,
+                created_at=now,
+                kind="symptom_recurrence",
+                subtype="vomiting",
+                message=f"Vomiting logged {len(vomits)} times in 14 days ({dates}). Similar issue last week.",
+                evidence_event_ids=_ids(vomits),
+            )
+        )
+
+    meals = [e for e in window14 if e.subtype in ("eaten", "appetite_low") or e.type == "meal"]
+    for vomit in vomits:
+        paired = [
+            m
+            for m in meals
+            if m.event_time <= vomit.event_time <= m.event_time + timedelta(hours=2)
+        ]
+        if paired:
+            flags.append(
+                PatternFlag(
+                    person_id=person_id,
+                    created_at=now,
+                    kind="meal_then_symptom",
+                    subtype="vomiting",
+                    message="Vomiting followed a meal within 2 hours. See the cited logs.",
+                    evidence_event_ids=_ids(paired + [vomit]),
+                )
+            )
+            break
+
+    return flags
+
+
+def similar_events(session: Session, person_id: Optional[int], subtypes: list[str], days: int = 14) -> list[CareEvent]:
+    events = session.exec(select(CareEvent).where(CareEvent.person_id == person_id)).all() if person_id is not None else session.exec(select(CareEvent)).all()
+    window = _in_window(events, days)
+    return [e for e in window if e.subtype in subtypes]
+
+
+def chart_payload(session: Session, person_id: Optional[int] = None) -> dict:
+    event_q = select(CareEvent)
+    med_q = select(MedicationSchedule)
+    if person_id is not None:
+        event_q = event_q.where(CareEvent.person_id == person_id)
+        med_q = med_q.where(MedicationSchedule.person_id == person_id)
+    events = session.exec(event_q).all()
+    meds = session.exec(med_q).all()
     change = next((m.last_changed_at for m in meds if m.last_changed_at), None)
     window = _in_window(events) or events
     if not window:
@@ -88,12 +164,20 @@ def chart_payload(session: Session) -> dict:
     days = []
     for i in range(6, -1, -1):
         day = latest - timedelta(days=i)
-        count = sum(
-            1
-            for e in events
-            if e.type == "symptom" and e.subtype == "confusion" and e.event_time.date() == day
+        confusion = sum(
+            1 for e in events if e.subtype == "confusion" and e.event_time.date() == day
         )
-        days.append({"date": day.isoformat(), "label": day.strftime("%a"), "confusion": count})
+        vomiting = sum(
+            1 for e in events if e.subtype == "vomiting" and e.event_time.date() == day
+        )
+        days.append(
+            {
+                "date": day.isoformat(),
+                "label": day.strftime("%a"),
+                "confusion": confusion,
+                "vomiting": vomiting,
+            }
+        )
     return {
         "days": days,
         "dose_change": change.isoformat() if change else None,

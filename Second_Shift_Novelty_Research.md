@@ -1,25 +1,29 @@
 # Second Shift — UK Novelty & Competitive Research Report
-*Is a voice-first AI agent for unpaid family carers novel in the UK? Verdict: the integrated concept is novel; individual slices exist. Details below.*
+*Is a voice-first AI agent for whoever is on the shift (family and paid staff) novel in the UK? Verdict: the integrated loop is novel; DSCR incumbents own the operational record, not person-level speech → patterns → cited brief. Details below.*
 
 ## Executive summary
 
-- **No equivalent UK product exists** that closes the full loop for **dementia care at home**: voice-first logging → missed-medicine / symptom pattern detection → escalation prompts → auto-generated, evidence-cited GP / memory-clinic brief.
-- **The UK market is converging on pieces of it**: Jointly (Carers UK coordination), Share2Care (NHS West Yorkshire unpaid-carer app + contingency plan), KinKeeper (family hub with PDF journal for GPs, UK launch 2026), Heidi / Tortus / Accurx (AI scribes of the GP consultation itself), PASSforcare (voice notes for *paid* home-care staff).
-- **UK policy tailwind**: 5.8 million unpaid carers; unpaid care worth about £184 billion a year; NHS 10 Year Health Plan shifts (hospital to community, analogue to digital); Nuffield Trust found only about 1.4% of unpaid carers are identifiable in GP data versus the Census.
+- **No equivalent UK product exists** that closes the full loop for **dementia care**: voice-first logging → missed-medicine / symptom pattern detection → shift handout + auto-generated, evidence-cited GP / memory-clinic brief, with **memory stored on the person** so the next worker (or a nurse/GP) sees last week’s events.
+- **The UK market is converging on pieces of it**: Jointly (Carers UK coordination), Share2Care (NHS West Yorkshire unpaid-carer app + contingency plan), KinKeeper (family hub with PDF journal for GPs, UK launch 2026), Heidi / Tortus / Accurx (AI scribes of the GP consultation itself), **Nourish / Birdie / PASSforcare** (paid-staff DSCRs, visits, eMAR).
+- **UK policy tailwind**: 5.8 million unpaid carers; unpaid care worth about £184 billion a year; NHS 10 Year Health Plan; Digitising Social Care / DSCR MODS; Nuffield Trust found only about 1.4% of unpaid carers are identifiable in GP data versus the Census.
 - **Academia (2023–2026)** has GPT/LLM assistants for dementia carers, plus UK pilots (Curendi, PuntoCare, council voice assessments). Almost all are Q&A, guidance, or social-care intake. None do operational logging → pattern detection → GP briefs.
 - **Hackathon arena**: no notable UK hackathon winner found with this full concept.
-- **Beachhead**: dementia care *at home* (unpaid family carers), not residential care homes.
-- **Novelty score (UK)**: concept ~6.5/10; integrated home→GP closed loop ~8.5/10; UK hackathon-context novelty ~9/10.
+- **Beachhead**: dementia. Users: unpaid family **and** paid support workers. Nurses/GPs get a simple view. We do **not** rebuild eMAR or a full DSCR.
+- **Novelty score (UK)**: concept ~6.5/10; integrated speech → person memory → GP/shift handout ~8.5/10; UK hackathon-context novelty ~9/10.
 
-## Beachhead: dementia at home (not a care home)
+## Beachhead: dementia (family and paid staff)
 
-There are many types of care, and many care *settings*. Second Shift v1 is one slice only.
+There are many types of care, and many care *settings*. Second Shift is one *job*, not one *setting*: turn what the person on shift says into a log, patterns, and a handout the next worker and the GP can use.
 
-| Setting | Who delivers care | In scope for v1? |
+| Setting | Who records | In scope? |
 |---|---|---|
-| **Family care at home** | Unpaid carer (son, daughter, partner) | **Yes. This is the product.** |
-| Paid domiciliary / home care | Agency staff (Birdie, PASSforcare) | No. Those tools already exist for professionals. |
-| Residential / nursing / dementia care home | Care-home staff | No. Homes already have eMAR and visit notes. |
+| **Family care at home** | Unpaid carer (son, daughter, partner) | **Yes.** Demo persona: Ravi / Dad. |
+| **Paid domiciliary / home care** | Agency support workers | **Yes, as recorders.** Do not rebuild Birdie visits/eMAR. |
+| **Residential / nursing / dementia care home** | Care/support workers | **Yes, as recorders.** Do not rebuild Nourish DSCR/eMAR. |
+| Nurse on the unit / caseload | Registered nurse | **Simple view** (flags, trends, PDF). Not a second EHR. |
+| GP / memory clinic | Doctor | **Simple view** (trends + cited brief). No shift clock. |
+
+Nourish, Birdie, and PASSforcare already exist for professional **operations**. The gap is **organisational memory on the person** when staff change, plus a cited GP handout from speech. That is still novel against those incumbents.
 
 Within *home* care, later verticals could include stroke, Parkinson’s, frailty, and end of life. **Start with dementia** because:
 
@@ -31,9 +35,9 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 - Academic and NHS innovation (Curendi, PuntoCare, Dementia Carers Count) already clusters here, but as Q&A, guidance, or cognitive testing, not logging → patterns → GP brief.
 - Memory-clinic and GP appointments are short. A one-page evidence brief of confusion episodes, missed medicines, sleep, and appetite is the format they can use.
 
-**Persona:** Ravi, 34, night shifts, cares at home for his 71-year-old father with dementia (6 medicines). Untrained. At the GP or memory-clinic appointment, he forgets half of the week.
+**Personas:** **Ravi**, 34, night shifts, cares at home for his 71-year-old father with dementia (6 medicines). **Priya**, support worker, was off last week and must still see that Able vomited after food.
 
-**Demo log:** “Gave dad his 8pm meds, 40 minutes late. More confused again this evening, third time this week.”
+**Demo logs:** “Gave dad his 8pm meds, 40 minutes late. More confused again this evening, third time this week.” / “Able has eaten; after eating he was vomiting.”
 
 ## Why the UK, not the US
 
@@ -58,7 +62,9 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 | **KinKeeper** (UK, launching 2026) | Family care hub: medicine logs, shared calendar, document vault, care journal exportable to PDF for GPs, AI weekly summary digest | Closest *brief* rival. Not voice-first; weekly digest is not a pattern-flagged, evidence-cited visit brief tied to voice-log timestamps; not live yet |
 | **Heidi, Tortus, Accurx Scribe** | Ambient AI scribes of the GP / clinic consultation; notes into EMIS / SystmOne | Capture the surgery, not the home. Know nothing about late doses or evening confusion between appointments |
 | **NHS App** | Appointments, prescriptions, GP record, messages | Patient-facing record access. No carer voice log, no pattern detection, no visit brief from home observations |
-| **PASSforcare / everyLIFE** | Paid home-care staff: visit check-in, eMAR, voice-to-text notes, GP Connect | Built for agencies and professional carers, not unpaid family carers at 11pm |
+| **PASSforcare / everyLIFE** | Paid home-care staff: visit check-in, eMAR, voice-to-text notes, GP Connect | Operational agency record. No person-level recurrence memory → cited GP brief from speech; not for unpaid family at 11pm either |
+| **Nourish Care** | Leading UK DSCR for residential and home-care providers; care plans, point-of-care notes, rostering (Empower), CQC-oriented records; NHS Assured Solutions list | Digitises the *paid care record*. Alerts are operational. Does not turn natural speech into deterministic patterns plus a cited GP/shift handout for whoever was *not* on last week |
+| **Birdie** | Home-care agency hub + carer app: visit check-in/out, observations, eMAR alerts | Visit and compliance alerts, not “Able vomited after meals last week” as evidence-cited person memory |
 | **Curendi** (NHS Clinical Entrepreneur Programme) | Dementia carer guidance between appointments: “help me now”, diaries, signposting to GP / memory clinic | Support and next-step advice, not operational event logging → patterns → GP brief |
 | **PuntoCare** (Punto Health; NHS pilots) | Speech AI for cognitive assessment plus a patient/carer daily-plan app | Detection and activity plans for the person with dementia, not carer home-event logging for the GP |
 | **Tovie AI** (Richmond & Wandsworth councils) | 24/7 voice/text assistant so unpaid carers can complete a *carer assessment* | Social-care intake, not a longitudinal care log or GP visit brief |
@@ -73,7 +79,7 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 | CareCurrent | Pre-visit briefs from hospital/EHR data, not carer voice logs |
 | ElliQ | Senior-facing companion robot; not a carer tool |
 
-**Closest UK pair:** Share2Care (NHS carer app) + KinKeeper (PDF for GPs). Neither closes voice → structured log → deterministic patterns → evidence-cited GP brief.
+**Closest UK pair (family):** Share2Care + KinKeeper. **Closest UK pair (paid staff):** Nourish + Birdie / PASSforcare. None close voice → structured log → deterministic person-level patterns → evidence-cited GP brief *and* a shift handout that follows 6h/12h (with 72h only as a family preset).
 
 ## Academic and UK research state of the art (2023–2026)
 
@@ -96,19 +102,21 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 - Zhou et al. 2026 (JMIR): ChatGPT-4o for early-stage dementia carer Q&A.
 - Vafafar et al. 2026 (ACM): emotional support. “Words are not enough.”
 
-**Gap confirmed (UK + literature):** no product or paper combines unpaid-carer *voice event-logging*, medicines/symptom *pattern detection*, and an automated, evidence-cited *GP visit brief*.
+**Gap confirmed (UK + literature):** no product or paper combines *voice event-logging* (family or paid staff), medicines/symptom *pattern detection on the person*, and an automated, evidence-cited *GP visit brief* plus a shift handout.
 
 ## The novelty delta (UK pitch ammunition)
 
-1. **The home→GP closed loop.** Heidi/Tortus capture the consultation. The NHS App shows the record. Share2Care stores a contingency plan. KinKeeper can export a journal PDF. Nobody turns what the unpaid carer *says at home* into what the GP *reads in the 10-minute appointment*.
-2. **Voice-first for the carer, not the patient.** UK voice products target Alexa in the living room, council assessments, or the person with dementia. The exhausted night-shift carer logging hands-free is unserved.
-3. **Evidence-cited GP brief.** Every line traces to a timestamped voice log. That is the trust feature for NHS-minded judges.
-4. **Family handover briefs.** “Your sister takes over tomorrow. Here is the last 72 hours.” Jointly and Share2Care coordinate people; they do not auto-generate a shift handover from the care log.
-5. **Makes the invisible carer visible.** If GP systems only see 1.4% of unpaid carers, a structured home log is a way to bring their observations into the appointment without claiming to write into the NHS record on day one.
+1. **Speech → next worker and GP.** Heidi/Tortus capture the consultation. Nourish/Birdie capture the paid record. Share2Care stores a contingency plan. Nobody turns what *this shift* said into what *the next shift and the GP* can read, with citations.
+2. **Voice-first for the person on shift, not the patient.** Family at 11pm and paid support workers both speak faster than they tap.
+3. **Evidence-cited GP brief.** Every line traces to a timestamped log. That is the trust feature for NHS-minded judges.
+4. **Handover that matches the shift.** Staff: 6h or 12h of *this* clock, plus open flags from the last 7–14 days. Family/weekend: 72-hour preset. Jointly and Nourish do not auto-write that from speech.
+5. **Memory stays with the person.** Priya was off last week; Able’s vomiting still surfaces. Flags store the exact event IDs.
+6. **Makes unpaid (and rotating paid) observers visible.** GP systems see ~1.4% of unpaid carers. Structured logs bring observations into the appointment without writing into the NHS record on day one.
 
 ## UK risks and mitigations
 
-- A judge knows **Jointly** or **Share2Care** → put the UK comparison table on one slide; say “they organise the circle of care; we turn home speech into a GP brief.”
+- A judge knows **Jointly** or **Share2Care** → “they organise the circle of care; we turn speech into a GP brief.”
+- A judge knows **Nourish / Birdie / PASSforcare** → “they digitise the paid record and eMAR; we keep memory on the person when staff change, and we write the handout from speech.”
 - A judge knows **Heidi / Tortus** → “they transcribe the appointment; we brief the GP on what happened *since* the last one.”
 - A judge knows **KinKeeper** → “PDF journal and weekly digest are adjacent; we are voice-first, pattern-flagged, and evidence-cited to the log.”
 - **MHRA medical-device** risk → frame as “flags patterns and drafts questions for the GP”; never diagnosis, triage, or treatment advice; persistent “not a medical device” disclaimer.
@@ -117,7 +125,7 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 
 ## Ways to sharpen novelty further (UK)
 
-1. Lead with the **handover brief** (family shift change). Jointly shares a circle; it does not write the handover.
+1. Lead with the **handover / handout** (staff: this shift; family: 72h preset). Jointly shares a circle; Nourish stores notes; neither writes the handout from speech.
 2. Keep the brief **evidence-cited** (timestamped quotes). NHS judges distrust unsourced AI summaries.
 3. Add **carer-burden check-ins** (Carers UK: high stress, worsening health). Products track the cared-for person, not the carer.
 4. Mention **offline / on-device** mode for privacy credibility (UK GDPR, Loc-demcare).
@@ -141,6 +149,10 @@ Within *home* care, later verticals could include stroke, Parkinson’s, frailty
 7. Jointly (Carers UK) — https://www.carersuk.org/help-and-advice/technology-and-equipment/jointly-app-for-carers/
 8. KinKeeper — https://kinkeeper.co.uk/
 9. PASSforcare / everyLIFE carer app — https://www.everylifetechnologies.com/pass-features/carer-app/
+9a. Nourish Care — https://nourishcare.com/
+9b. Birdie — https://www.birdie.care/product-features/carer-app
+9c. NHS England DAPB4102 DSCR MODS — https://digital.nhs.uk/data-and-information/information-standards/governance/latest-activity/standards-and-collections/dapb4102-adult-social-care-record-minimum-operational-data-standard
+9d. DHSC Care Workforce Pathway — https://www.gov.uk/government/publications/care-workforce-pathway-for-adult-social-care
 10. Heidi Health (UK GP scribe) — https://www.heidihealth.com
 11. Tortus (UK NHS ambient scribe) — https://tortus.ai
 12. Accurx — https://www.accurx.com

@@ -6,7 +6,9 @@ This document explains **what we built, why, and how each part works**. Read it 
 
 ## 1. What this project is
 
-Second Shift is a **voice-first helper for unpaid family carers** of people with **dementia at home in the UK**.
+Second Shift is a **voice-first helper for whoever is on the shift**: unpaid family carers **and** paid support workers, for people with **dementia** (at home or in a service). Nurses and doctors use a **simple view** of the same person record.
+
+**Brand:** they keep care inside the provider app. We turn a spoken sentence into a cited page for the person who is not in that app. See [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md).
 
 The carer speaks naturally, for example:
 
@@ -18,11 +20,11 @@ The app then:
 2. Turns that text into a **structured care log** (medicine late, confusion, low appetite, and so on).
 3. Runs **rules** (not the AI) to spot patterns, such as three confusion episodes after a dose change.
 4. Builds a **one-page GP / memory-clinic brief** where every fact cites a log timestamp.
-5. Can also build a **72-hour family handover** for the relative taking over.
+5. Can also build a **handover / handout**: staff version follows the shift (6h or 12h); **72 hours** is the family/weekend preset.
 
 It **organises notes and drafts questions**. It does **not** diagnose, triage, or give treatment advice. It is **not a medical device**.
 
-Named user: **Ravi**, 34, night shifts, cares for his 71-year-old father.
+Named users: **Ravi** (family, Dad) and, next, **Priya** (support worker, Able).
 
 ---
 
@@ -38,6 +40,7 @@ We checked whether this idea already exists in the **UK**.
 | Share2Care (NHS West Yorkshire) | Carer app + contingency plan in the NHS record | Still tap-based organisation |
 | Heidi / Tortus / Accurx | AI scribe of the GP appointment | Knows nothing about home |
 | Curendi | Dementia carer guidance between appointments | Advice, not logging → brief |
+| Nourish / Birdie / PASSforcare | Paid-staff DSCR, visits, eMAR | Not speech → person memory → cited brief |
 
 **UK facts we used**
 
@@ -46,7 +49,7 @@ We checked whether this idea already exists in the **UK**.
 - About 5.8 million unpaid carers.
 - Only about 1.4% of unpaid carers show up in GP records.
 
-**Beachhead:** dementia **at home**, not a care home (homes already have eMAR). Later we could add stroke, Parkinson’s, frailty.
+**Beachhead:** dementia. Family *and* paid staff. We do not rebuild eMAR. Later: stroke, Parkinson’s, frailty.
 
 Full write-up: [Second_Shift_Novelty_Research.md](Second_Shift_Novelty_Research.md).  
 One-page pitch: [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf).
@@ -92,6 +95,7 @@ This machine has a **GTX 1650 (4GB VRAM)**. Whisper runs on the GPU, then unload
 | `environment.yml` | conda env named `secondshift` |
 | `docs/` | Mockup images and HTML one-pager art |
 | `IMPLEMENTATION_PHASES.md` | Original phase plan |
+| `PLAN_OF_ACTION.md` | Next build: login, shifts, clinical view |
 
 ---
 
@@ -224,7 +228,7 @@ PDF is built with `fpdf2` (no extra system libraries). Download: `GET /briefs/la
 
 **Urgent checkbox:** “Add to the urgent section of the GP brief” plus NHS 111 text. Observational only.
 
-**Family handover:** last 72 hours, open flags, medicines due next. Download `GET /handover/latest.pdf`.
+**Handover (as shipped):** last 72 hours, open flags, medicines due next. Download `GET /handover/latest.pdf`. **Next:** staff PDF uses the actual shift window; 72h remains the family preset.
 
 **What was verified:** emergency path never calls Ollama; handover PDF exists; chart includes `2026-08-07` (`tests/test_phase4.py`).
 
@@ -287,8 +291,9 @@ Without Ollama, typed demo logging still works.
 4. Timeline should show late medicines + confusion.
 5. Patterns should mention three confusion episodes after the Friday dose change.
 6. Brief → **Generate GP brief** → download PDF. Check a `[log …]` citation.
-7. **Family handover** → download the 72-hour PDF.
-8. Optional: type `He is unconscious` and confirm the 999 screen.
+7. **Handover** → shift handout or 72-hour family preset.
+8. Switch person to **Able**. Type: `Able has eaten; after eating he was vomiting.` Banner should cite 7–8 Aug. Tap a quote.
+9. Press a worker name, then press the person you are with. Or press Nurse or GP, then the person. Type `He is unconscious` on Log as a worker for the 999 screen.
 
 ---
 
@@ -308,11 +313,11 @@ Result when last run: **12 unit tests passed**, plus a text-path closed-loop smo
 
 - NHS login / writing into the GP record
 - Training our own Whisper or Llama
-- Care-home or paid-carer app
-- Multi-user accounts, push notifications, doctor portal
+- Full eMAR / Nourish-style DSCR
 - Diagnosis or triage
+- Real passwords (next build uses **fake login** only)
 
-Those stay on the pitch slide only.
+Paid staff + a simple nurse/GP view are in [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md), not in the current running app yet.
 
 ---
 
@@ -333,4 +338,4 @@ Those stay on the pitch slide only.
 
 ## 11. Pitch line
 
-> Jointly organises the circle of care. Heidi transcribes the appointment. Second Shift turns what the carer says at 11pm into what the GP reads in 10 minutes.
+> Nourish digitises the paid care record. Heidi transcribes the appointment. Second Shift turns what the person on shift says into what the next worker and the GP can read.

@@ -44,11 +44,20 @@ with TestClient(app) as client:
     assert "[log " in brief.json()["markdown"]
     pdf = client.get("/briefs/latest.pdf")
     assert pdf.content[:4] == b"%PDF"
-    handover = client.post("/handover", json={"name": "your sister"})
+    handover = client.post("/handover", json={"name": "your sister", "window": "72h"})
     assert handover.status_code == 200
     hp = client.get("/handover/latest.pdf")
     assert hp.content[:4] == b"%PDF"
-print("closed loop OK (text path)")
+    people = client.get("/people").json()
+    able = next(p["id"] for p in people if p["name"] == "Able")
+    able_line = "Able has eaten; after eating he was vomiting."
+    logged_able = client.post("/log", json={"transcript": able_line, "use_heuristic": True, "person_id": able})
+    assert logged_able.status_code == 200
+    assert any(e["subtype"] == "vomiting" for e in logged_able.json()["events"])
+    assert logged_able.json()["similar"]
+    blocked = client.post("/log", json={"transcript": able_line, "use_heuristic": True}, headers={"X-Demo-Role": "clinician"})
+    assert blocked.status_code == 403
+print("closed loop OK (text path + Able + role guard)")
 PY
 
 echo "== live Ollama (optional) =="

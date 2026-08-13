@@ -1,6 +1,6 @@
 # Second Shift — Implementation Phases
 
-Research → product, broken into phases. Beachhead: **UK unpaid family carers of people with dementia at home**.
+Research → product, broken into phases. **Shipped:** Phases 0–4 + Docker. **Next:** [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md) (Phase 6). Users: unpaid family **and** paid support workers; nurse/GP simple view.
 
 Every phase has: **goal**, **what to build**, **research it rests on**, **done when**, and **out of scope**.
 
@@ -10,7 +10,8 @@ Phase 1  Voice → structured care log
 Phase 2  Pattern engine
 Phase 3  Evidence-cited GP / memory-clinic brief
 Phase 4  Demo polish + differentiators
-Phase 5  Pitch-only (do not build in hackathon)
+Phase 5  Pitch-only (do not build)
+Phase 6  Multi-role: login, shifts, person memory (see PLAN_OF_ACTION.md)
 ```
 
 ---
@@ -35,7 +36,7 @@ Phase 5  Pitch-only (do not build in hackathon)
 - Persistent UI disclaimer: *not a medical device*
 
 ### Research this phase uses
-- UK beachhead: dementia at home, not care homes ([research](Second_Shift_Novelty_Research.md))
+- UK beachhead: dementia (family at home *and* paid staff). Do not rebuild eMAR ([research](Second_Shift_Novelty_Research.md))
 - Persona and demo narrative from the engineering spec
 - Safety framing: organise notes, draft questions for the GP
 
@@ -149,7 +150,7 @@ Phase 5  Pitch-only (do not build in hackathon)
    - Output filter for advice-shaped phrasing
    - Privacy copy: discard audio after STT, export/delete
 4. **Fallback ladder** (rehearse all): live mic → pre-recorded clip → typed input → cached PDF
-5. **P1 if time:** Family **handover brief** (72-hour PDF for the sibling taking over) — zero known UK competitors
+5. **P1 if time:** **Handover brief** (family 72-hour preset; staff version follows the actual shift)
 6. **P1 if time:** Soft escalation prompt — “Want me to add this to the urgent section of the brief?” + static NHS 111 / local nurse-line text
 
 ### Research this phase uses
@@ -167,7 +168,7 @@ Phase 5  Pitch-only (do not build in hackathon)
 
 ---
 
-## Phase 5 — Pitch only (do not build in the hackathon)
+## Phase 5 — Pitch only (do not build)
 
 Mention on slides; do not spend build hours here.
 
@@ -175,10 +176,29 @@ Mention on slides; do not spend build hours here.
 |---|---|---|
 | Carer-burden self check-in | Carers UK: high stress, worsening health | Dilutes demo focus |
 | Multi-carer accounts + push | Jointly / Share2Care strength | Needs auth and time |
-| Doctor / memory-clinic portal | Nice long-term | NHS IG / DTAC rabbit hole |
+| Full doctor / memory-clinic portal | Nice long-term | Phase 6 is a *simple view* only; not NHS IG |
 | On-device / local LLM | Strong UK privacy story | Hard in 48 hours |
 | Stroke / Parkinson’s / frailty packs | Later verticals after dementia | Beachhead discipline |
 | NHS login write-back | Share2Care already there | Liability + integration risk |
+| Full eMAR / Nourish clone | Paid-staff incumbents already here | We own speech → person memory → handout |
+
+---
+
+## Phase 6 — Next build (novelty first, then costume)
+
+Full plan: [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md).
+
+**Goal:** Speech → cited page for the person who is not in Birdie/Nourish. Do not bury that behind login.
+
+### Build (in order) — implemented
+0. Theme + split UI (Dad demo still works)  
+1. Person-first schema + Able seed  
+2. Similar-last-week banner, tap-to-quote, `POST /log/audio`  
+3. Handover **screen** + shift window (72h family preset)  
+4. Fake login + shared nurse/doctor view (`X-Demo-Role`; Record now opens Talk)  
+
+### Out of scope
+eMAR, task lists, rostering, 11-table DSCR, AuditLog, diagnosing in the banner, separate nurse vs doctor apps.
 
 ---
 
@@ -204,7 +224,8 @@ Assume 4 people. Collapse roles if fewer.
 | 2 | Live confusion log fires recurrence + dose-change flag |
 | 3 | One-tap evidence-cited PDF |
 | 4 | Rehearsed demo + chart + safety + backups |
-| 5 | Pitch mentions only |
+| 5 | Pitch mentions only (NHS write-back, full eMAR) |
+| 6 | Fake login, person-first DB, shift handout, nurse/GP view ([plan](PLAN_OF_ACTION.md)) |
 
 ---
 
@@ -233,6 +254,9 @@ If behind at hour 24: **skip handover**, keep chart + safety + cached PDF. The c
 | Competitors lack pattern detection | Phase 2 |
 | Nobody connects home speech to the GP brief | Phase 3 |
 | Evidence citations build NHS trust | Phase 3 |
-| Family handover is unique | Phase 4 (P1) |
+| Family 72h handover (preset) | Phase 4 (P1) |
+| Staff handover follows the shift (6h / 12h) | Phase 6 |
+| Memory stays with the person when staff change | Phase 6 |
+| Simple nurse/GP view | Phase 6 |
 | Not a medical device / UK GDPR | Phase 0 disclaimer + Phase 4 safety |
-| NHS write-back is a trap for hackathons | Phase 5 (pitch only) |
+| NHS write-back / full eMAR | Phase 5 (pitch only; do not build) |

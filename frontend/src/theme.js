@@ -1,0 +1,28 @@
+export const theme = {
+  color: {
+    ink: "#212b32",
+    muted: "#4c6272",
+    accent: "#005eb8",
+    darkBlue: "#003087",
+    soft: "#f0f4f5",
+    paper: "#ffffff",
+    danger: "#d5281b",
+    dangerSoft: "#f8d7d4",
+    warning: "#ffb81c",
+    warningSoft: "#fff9c4",
+    success: "#007f3b",
+    successSoft: "#cce5d6",
+    line: "#d8dde0",
+    input: "#4c6272",
+    onAccent: "#ffffff",
+    focus: "#ffeb3b",
+    button: "#007f3b",
+    buttonShade: "#00401e",
+  },
+  font: {
+    family: "Arial, Helvetica, sans-serif",
+  },
+  space: { 1: 4, 2: 8, 3: 12, 4: 16, 5: 24, 6: 32 },
+  radius: { sm: 4, md: 8, full: 9999 },
+  shadow: { card: "0 1px 0 rgba(33, 43, 50, 0.08)" },
+};

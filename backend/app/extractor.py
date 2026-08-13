@@ -48,6 +48,27 @@ def heuristic_extract(transcript: str, now: datetime) -> dict[str, Any]:
                 "confidence": 0.85,
             }
         )
+    if "eaten" in text or "has eat" in text or "ate " in text:
+        if not any(e["subtype"] == "appetite_low" for e in events):
+            events.append(
+                {
+                    "type": "meal",
+                    "subtype": "eaten",
+                    "event_time": event_time.isoformat(timespec="minutes"),
+                    "detail": "ate a meal",
+                    "confidence": 0.85,
+                }
+            )
+    if "vomit" in text or "was sick" in text or "throwing up" in text:
+        events.append(
+            {
+                "type": "symptom",
+                "subtype": "vomiting",
+                "event_time": event_time.isoformat(timespec="minutes"),
+                "detail": "vomiting after food" if "after" in text or "eaten" in text else "vomiting",
+                "confidence": 0.9,
+            }
+        )
     if not events:
         events.append(
             {

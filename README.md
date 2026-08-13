@@ -2,9 +2,9 @@
 
 **Turns two weeks of exhaustion into one page of evidence.**
 
-A voice-first AI agent for **unpaid family carers of people with dementia in the UK**. The carer speaks naturally at home. Second Shift logs what happened, spots missed-medicine and symptom patterns, and generates an **evidence-cited GP / memory-clinic brief**.
+A voice-first AI agent for **whoever is on the shift**: unpaid family carers **and** paid support workers in UK dementia care (home or residential). They speak or type. Second Shift logs what happened, spots patterns, writes a **shift handout**, and generates an **evidence-cited GP / memory-clinic brief**. Nurses and doctors get a **simple view** of the same person record.
 
-**Start here:** [GUIDE.md](GUIDE.md) — section-by-section explanation of the research, the app, how to run it, and how to demo it.
+**Start here:** [GUIDE.md](GUIDE.md) — what was built. Next build: [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md).
 
 This repository contains the research pack **and a working local app**. It is **not a medical device**. It organises notes and drafts questions for the GP. It does not diagnose, triage, or give medical advice.
 
@@ -65,9 +65,11 @@ On this machine Whisper uses CUDA then unloads so Ollama can use the 4GB GTX 165
 
 ## The problem
 
-Most people with dementia in the UK live **at home**, not in a care home. The person who actually knows the week (late tablets, evening confusion, skipped meals) is an unpaid family carer. That knowledge usually dies at the surgery door.
+Staff and family change. The person receiving care does not. What happened last week (vomiting after food, late tablets, evening confusion) lives in whoever was on that shift, then disappears.
 
-**Ravi, 34**, works night shifts and cares for his 71-year-old father (dementia, 6 medicines). He is untrained and exhausted. At the GP or memory-clinic appointment he forgets half of what happened.
+**Ravi, 34**, unpaid, cares for his father at home and forgets half the week at the GP. **Priya**, a support worker, was off last week and does not know Able vomited after meals unless the record tells her.
+
+Both need the same loop: speak → log → patterns → handout for the next person and the GP.
 
 | Why this matters in the UK | Figure |
 |---|---|
@@ -84,20 +86,20 @@ Existing UK tools cover **slices** of this:
 - **Jointly** and **Share2Care** organise a circle of care (tap and type).
 - **Heidi / Tortus / Accurx** transcribe the GP appointment itself.
 - **Curendi** and **PuntoCare** give dementia guidance or cognitive testing.
-- **PASSforcare** is for paid home-care staff, not family at 11pm.
+- **PASSforcare, Birdie, Nourish** digitise the paid care record (visits, eMAR, CQC). They do not turn speech into person-level recurrence memory plus a cited GP brief.
 
-Nobody closes the loop from **what the carer says at home** to **what the GP reads in ten minutes**.
+Nobody closes the loop from **what the person on shift says** to **what the next worker and the GP can read**.
 
 ---
 
 ## What we are proposing
 
 ```text
-Carer speaks  →  speech-to-text  →  structured care events
+Person on shift speaks  →  speech-to-text  →  structured care events (on the person)
                                               ↓
                                     pattern engine (rules)
                                               ↓
-                         evidence-cited PDF for GP / memory clinic
+                    shift handout  +  evidence-cited PDF for GP / nurse view
 ```
 
 ### Four screens (hackathon demo)
@@ -109,11 +111,14 @@ Carer speaks  →  speech-to-text  →  structured care events
 
 ### What we will not build in v1
 
-- A care-home or agency product (those already have eMAR).
-- NHS login / GP Connect write-back (Share2Care already occupies that lane).
+- Full eMAR, rostering, or a Nourish-style DSCR.
+- NHS login / GP Connect write-back.
 - Diagnosis, triage, or treatment advice.
+- Separate nurse vs doctor apps (one simple view is enough).
 
-**Beachhead:** dementia care at home. Later: stroke, Parkinson’s, frailty.
+**Beachhead:** dementia. Users: family *and* paid staff. Later: stroke, Parkinson’s, frailty.
+
+**Next build:** [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md) (theme + split UI, person-first + Able, similar-last-week + cited PDF, then login/clinical view).
 
 ---
 
@@ -152,11 +157,12 @@ flowchart LR
 | Share2Care (NHS West Yorkshire) | Carer app + contingency plan in NHS record | Still tap-based organisation |
 | Heidi / Tortus / Accurx | AI scribe of the GP appointment | Knows nothing about home |
 | Curendi (NHS CEP) | Dementia carer guidance between appointments | Advice, not logging → brief |
-| KinKeeper (UK, 2026) | Family hub; journal PDF for GPs | Not voice-first; not evidence-cited from home logs |
+| KinKeeper (UK, 2026) | Family hub; journal PDF for GPs | Not voice-first; not evidence-cited from the care log |
+| Nourish / Birdie / PASSforcare | Paid-staff DSCR, visits, eMAR | Operational record, not speech → person memory → cited brief |
 
 **Novelty scores:** concept ~6.5/10 (slices exist); integrated home→GP loop ~8.5/10; hackathon context ~9/10.
 
-Pitch line: *Jointly organises the circle of care. Heidi transcribes the appointment. Second Shift turns what the carer says at 11pm into what the GP reads in 10 minutes.*
+Pitch line: *Nourish digitises the paid care record. Heidi transcribes the appointment. Second Shift turns what the person on shift says into what the next worker and the GP can read.*
 
 Full comparison, academic papers, and UK policy notes: [Second_Shift_Novelty_Research.md](Second_Shift_Novelty_Research.md).
 
@@ -168,8 +174,8 @@ Full comparison, academic papers, and UK policy notes: [Second_Shift_Novelty_Res
 - Escalation language is observational: “You have logged confusion 3 times since Friday.” Never “this could be serious.”
 - Emergency words (unconscious, not breathing, severe chest pain) → static screen: call 999. No LLM.
 - Encrypted at rest. Discard raw audio after transcription. Export / delete on demand.
-- Demo uses a **synthetic** persona (Ravi / Dad). Say that on stage.
-- Do not claim NHS-record write in a hackathon build. The carer **brings a PDF** to the GP.
+- Demo uses **synthetic** people (Ravi / Dad, Priya / Able). Say that on stage.
+- Do not claim NHS-record write in a hackathon build. The worker or family **brings a PDF**.
 
 ---
 
@@ -180,8 +186,10 @@ Full comparison, academic papers, and UK policy notes: [Second_Shift_Novelty_Res
 > The agent logs it, flags the cluster after Friday’s dose change, and generates a one-page brief with timestamps, symptoms, and questions for the GP.
 >
 > **Close:** Ravi walks into the appointment with evidence instead of exhaustion.
+>
+> Second beat (next build): Priya logs that Able ate then vomited. The app shows the same issue last week, even though she was off.
 
-Pre-seed 6 days of synthetic logs so the live line is day 7 and the recurrence threshold fires **on stage**. Fallback ladder: live mic → pre-recorded clip → typed input → cached PDF.
+Pre-seed synthetic logs so live lines fire patterns **on stage**. Fallback ladder: live mic → pre-recorded clip → typed input → cached PDF.
 
 ---
 
@@ -204,6 +212,7 @@ Printable A4: [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) · HTML s
 | [scripts/verify_all.sh](scripts/verify_all.sh) | Full verification |
 | [environment.yml](environment.yml) | conda env `secondshift` |
 | [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md) | Research broken into build phases 0–5 |
+| [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md) | Next build: novelty loop first, then login |
 | [Second_Shift_Novelty_Research.md](Second_Shift_Novelty_Research.md) | UK competitive and academic research |
 | [Second_Shift_Engineering_Spec.docx](Second_Shift_Engineering_Spec.docx) | Build spec: data model, prompts, stack |
 | [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) | One-page pitch |
@@ -223,7 +232,8 @@ Full detail: [IMPLEMENTATION_PHASES.md](IMPLEMENTATION_PHASES.md)
 | **2 Pattern engine** | 10–16 | Rules flag late doses + confusion after dose change |
 | **3 GP brief** | 16–24 | Evidence-cited PDF (close the home → GP loop) |
 | **4 Polish** | 24–40 | Chart, safety, fallbacks, optional handover brief |
-| **5 Pitch only** | — | Multi-carer, NHS write-back, local LLM — do not build |
+| **5 Pitch only** | — | NHS write-back, full eMAR — do not build |
+| **6 Next** | see plan | Theme/split UI, Able memory, cited banner, then clinical view |
 
 If behind at hour 24: skip handover; keep voice → pattern → brief. That closed loop is the win.
 
