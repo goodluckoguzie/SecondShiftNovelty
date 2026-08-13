@@ -17,7 +17,7 @@ RUN mkdir -p /app/data/tmp
 
 ENV PYTHONPATH=/app
 ENV WHISPER_DEVICE=cpu
-ENV WHISPER_MODEL=small
+ENV WHISPER_MODEL=base
 ENV OLLAMA_HOST=http://ollama:11434
 ENV OLLAMA_MODEL=llama3.2:3b
 

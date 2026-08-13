@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getJson, logAudio, postJson, setDemoRole, setPersonId, speak } from "./api.js";
+import { getJson, getPersonId, postJson, setDemoRole, setPersonId, speak, transcribeAudio } from "./api.js";
 import { QuoteCard } from "./components/QuoteCard.jsx";
 import { Shell } from "./components/Shell.jsx";
 import { BriefScreen } from "./screens/BriefScreen.jsx";
@@ -28,6 +28,7 @@ export default function App() {
   const [quote, setQuote] = useState(null);
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState("");
   const [briefMd, setBriefMd] = useState("");
   const [handoverMd, setHandoverMd] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +38,11 @@ export default function App() {
   const chunksRef = useRef([]);
   const streamRef = useRef(null);
   const autoStopRef = useRef(null);
+  const applyLogRef = useRef(null);
+
+  function hasNativeMic() {
+    return Boolean(window.ReactNativeWebView?.postMessage || window.__SECOND_SHIFT_NATIVE__);
+  }
 
   const canWrite = role === "support_worker";
   const whoLabel = worker?.display_name || "Nurse or GP";
@@ -130,6 +136,43 @@ export default function App() {
     speak(result.confirmation);
     await refresh();
   }
+  applyLogRef.current = applyLog;
+
+  useEffect(() => {
+    function onNative(event) {
+      const data = event.detail || {};
+      if (data.type === "mic-saving") {
+        setBusy(true);
+        setRecording(false);
+        setStatus("writing");
+        return;
+      }
+      if (data.type === "mic-heard") {
+        setBusy(true);
+        setRecording(false);
+        setStatus("saving");
+        if (data.transcript) setTranscript(data.transcript);
+        return;
+      }
+      if (data.type === "mic-error") {
+        setBusy(false);
+        setRecording(false);
+        setStatus("");
+        setError(data.message || "Microphone failed. Type the log instead.");
+        return;
+      }
+      if (data.type === "mic-result" && data.result) {
+        if (data.transcript) setTranscript(data.transcript);
+        applyLogRef.current(data.result).finally(() => {
+          setBusy(false);
+          setRecording(false);
+          setStatus("");
+        });
+      }
+    }
+    window.addEventListener("secondshift-native", onNative);
+    return () => window.removeEventListener("secondshift-native", onNative);
+  }, []);
 
   async function submitTranscript(text) {
     setBusy(true);
@@ -162,6 +205,26 @@ export default function App() {
   async function startMic() {
     setError("");
     setConfirmation("");
+    setTranscript("");
+    setStatus("");
+    if (hasNativeMic()) {
+      window.ReactNativeWebView?.postMessage(
+        JSON.stringify({
+          type: "mic-start",
+          person_id: getPersonId(),
+          logger_id: worker?.id,
+          shift_id: shift?.id,
+          urgent,
+        }),
+      );
+      setRecording(true);
+      autoStopRef.current = setTimeout(() => stopMic(), 15000);
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("This screen cannot use the microphone. Type the log instead.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -181,15 +244,31 @@ export default function App() {
           return;
         }
         setBusy(true);
+        setStatus("writing");
         try {
-          const result = await logAudio(blob, { urgent, shift_id: shift?.id, logger_id: worker?.id });
-          if (result.transcript) setTranscript(result.transcript);
+          const heard = await transcribeAudio(blob);
+          const text = (heard.transcript || "").trim();
+          if (!text) {
+            setError("Heard nothing. Speak again, then press Stop.");
+            return;
+          }
+          setTranscript(text);
+          setStatus("saving");
+          const result = await postJson("/log", {
+            transcript: text,
+            urgent,
+            use_heuristic: true,
+            shift_id: shift?.id,
+            logger_id: worker?.id,
+          });
+          result.transcript = text;
           await applyLog(result);
         } catch (err) {
-          setError(`Whisper failed. Type the log instead. ${err.message}`);
+          setError(`Could not write what you said. Type the log instead. ${err.message}`);
         } finally {
           setBusy(false);
           setRecording(false);
+          setStatus("");
         }
       };
       mediaRef.current = recorder;
@@ -207,6 +286,14 @@ export default function App() {
   }
 
   function stopMic() {
+    if (autoStopRef.current) {
+      clearTimeout(autoStopRef.current);
+      autoStopRef.current = null;
+    }
+    if (hasNativeMic()) {
+      window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "mic-stop" }));
+      return;
+    }
     const recorder = mediaRef.current;
     if (recorder && recorder.state !== "inactive") recorder.stop();
     setRecording(false);
@@ -307,6 +394,7 @@ export default function App() {
           setTranscript={setTranscript}
           recording={recording}
           busy={busy}
+          status={status}
           confirmation={confirmation}
           similar={similar}
           flags={flags}

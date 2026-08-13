@@ -16,15 +16,44 @@ This repository contains the research pack **and a working local app**. It is **
 
 ## Run the app
 
-**Docker (one script):**
+Need **Docker** and, for the phone, **Node.js** plus **Expo Go SDK 54**. Phone and computer must be on the **same Wi-Fi** (or the phone’s hotspot).
+
+### 1. Website
 
 ```bash
 ./run.sh
 ```
 
-That builds and starts the API, the website, and Ollama. Open **http://127.0.0.1:8080**. Stop with `docker compose down`.
+That builds and starts the API, the website, and Ollama. Open **http://127.0.0.1:8080**.
 
-**Without Docker** (conda env **`secondshift`**, local Whisper, host Ollama):
+First run downloads images, Whisper, and `llama3.2:3b`. Later runs reuse them. Stop with `docker compose down` (or `docker-compose down`).
+
+Who → person → speak or type a log → Watch → cited GP / handover page.
+
+### 2. Phone (Expo Go)
+
+Keep the website running, then:
+
+```bash
+./run-expo.sh
+```
+
+1. Install **Expo Go** for SDK **54**. Do not update Expo Go if it asks for a newer version.
+2. Open **Expo Go** → **Scan QR code**. Do not use the normal camera app.
+3. Allow the microphone.
+4. Choose a worker, then the person, then **Start speaking**. After **Stop**, you should see **What you said**.
+
+The script prints a LAN QR such as `exp://192.168.x.x:8081`. If the phone cannot connect, they are not on the same network. Set the computer’s Wi-Fi IP by hand:
+
+```bash
+LAN_IP=192.168.1.23 ./run-expo.sh
+```
+
+`./run-expo.sh` fails until `./run.sh` has made http://\<that-ip\>:8080 healthy.
+
+### 3. Without Docker
+
+Conda env **`secondshift`**, local Whisper, host Ollama:
 
 ```bash
 conda activate secondshift
@@ -47,8 +76,7 @@ VITE_API_URL=http://127.0.0.1:8001 npm run dev
 
 Open http://127.0.0.1:5173
 
-- Type the Ravi line if the mic is unavailable (text fallback).
-- Chrome is the demo browser (mic + SpeechSynthesis).
+Type the log if the mic is unavailable. Chrome is the desktop demo browser.
 
 ### Tests
 
@@ -59,7 +87,7 @@ conda activate secondshift
 
 Unit tests do not need Ollama. Live extraction: `python -m pytest tests/ -m live` with `ollama serve` and `llama3.2:3b` pulled.
 
-On this machine Whisper uses CUDA then unloads so Ollama can use the 4GB GTX 1650. If JSON quality is weak, run `ollama pull qwen2.5:7b` and set `OLLAMA_MODEL=qwen2.5:7b` (CPU is fine).
+Docker Whisper stays loaded on CPU (`base`). Without Docker, Whisper can use CUDA then unload so Ollama can use a 4GB GPU. If JSON quality is weak, run `ollama pull qwen2.5:7b` and set `OLLAMA_MODEL=qwen2.5:7b`.
 
 ---
 
@@ -138,7 +166,7 @@ flowchart LR
 | Layer | Role | This build |
 |---|---|---|
 | Frontend | Talk, timeline, patterns, brief | React + Vite + Tailwind |
-| Speech in | Mic → transcript | Local Whisper `small` via faster-whisper |
+| Speech in | Mic → transcript | Local Whisper `base` via faster-whisper |
 | Extractor | Free speech → typed events | Ollama `llama3.2:3b` JSON (heuristic fallback) |
 | Database | Append-only care log | SQLite |
 | Patterns | Late doses, recurrence, dose-change clusters | Deterministic rules, not the LLM |
@@ -208,6 +236,9 @@ Printable A4: [Second_Shift_One_Pager.pdf](Second_Shift_One_Pager.pdf) · HTML s
 | [GUIDE.md](GUIDE.md) | Section-by-section guide to what was built |
 | [backend/](backend/) | FastAPI, SQLite, Whisper, Ollama, rules, PDF |
 | [frontend/](frontend/) | Talk, Timeline, Patterns, Brief |
+| [mobile/](mobile/) | Expo Go wrapper (SDK 54) for the live website |
+| [run.sh](run.sh) | Docker build, start, smoke test |
+| [run-expo.sh](run-expo.sh) | Phone QR on the same Wi-Fi |
 | [tests/](tests/) | pytest gates for phases 0–4 |
 | [scripts/verify_all.sh](scripts/verify_all.sh) | Full verification |
 | [environment.yml](environment.yml) | conda env `secondshift` |

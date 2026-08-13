@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -96,6 +97,15 @@ def _flag_out(session: Session, row: PatternFlag) -> dict:
     }
 
 
+def _warm_whisper() -> None:
+    try:
+        from .whisper_stt import warmup
+
+        warmup(WHISPER_MODEL)
+    except Exception:
+        pass
+
+
 @app.on_event("startup")
 def startup() -> None:
     init_db()
@@ -103,6 +113,7 @@ def startup() -> None:
     with Session(engine) as session:
         seed_if_empty(session)
         recompute_flags(session)
+    threading.Thread(target=_warm_whisper, daemon=True).start()
 
 
 @app.get("/health")
@@ -315,7 +326,7 @@ async def log_audio(
     file: UploadFile = File(...),
     person_id: Optional[int] = None,
     urgent: bool = False,
-    use_heuristic: bool = False,
+    use_heuristic: bool = True,
     shift_id: Optional[int] = None,
     logger_id: Optional[int] = None,
     session: Session = Depends(get_session),
@@ -336,7 +347,7 @@ async def log_audio(
         raise HTTPException(503, f"Whisper unavailable: {exc}") from exc
     dest.unlink(missing_ok=True)
     if not text or not text.strip():
-        raise HTTPException(400, "Heard nothing")
+        raise HTTPException(400, "Heard nothing. Speak again, then press Stop.")
     person = resolve_person(session, person_id)
     result = _store_log(session, person, text.strip(), urgent, use_heuristic, shift_id, logger_id)
     result["transcript"] = text.strip()

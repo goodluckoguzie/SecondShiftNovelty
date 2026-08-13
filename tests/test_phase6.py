@@ -15,7 +15,7 @@ def test_people_include_dad_and_able(client):
 def test_five_named_care_workers(client):
     users = client.get("/users").json()
     names = {u["display_name"] for u in users if u["role"] == "support_worker"}
-    assert names == {"Goodluck", "Abene", "Pelumi", "Okunola", "Kemi"}
+    assert names == {"Goodluck", "Abena", "Pelumi", "Okunola", "Kemi"}
 
 
 def test_person_isolation(client):

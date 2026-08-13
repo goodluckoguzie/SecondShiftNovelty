@@ -91,6 +91,8 @@ This machine has a **GTX 1650 (4GB VRAM)**. Whisper runs on the GPU, then unload
 | `tests/` | Automated checks for each phase |
 | `scripts/verify_all.sh` | Runs those checks in one go |
 | `run.sh` | One command: Docker build, start, smoke test |
+| `run-expo.sh` | Phone QR for Expo Go on the same Wi-Fi |
+| `mobile/` | Expo Go app (SDK 54) wrapping the live website |
 | `docker-compose.yml` | API + website + Ollama |
 | `environment.yml` | conda env named `secondshift` |
 | `docs/` | Mockup images and HTML one-pager art |
@@ -236,37 +238,54 @@ PDF is built with `fpdf2` (no extra system libraries). Download: `GET /briefs/la
 
 ## 6. How to run (correct folders)
 
+From the repo root. Phone and computer must be on the **same Wi-Fi**.
+
 ### Docker (recommended)
 
 One script starts the API, the website, and Ollama, then checks the closed loop:
 
 ```bash
-cd /home/goodluck/Desktop/MyProjects/Tutorial/SecondShiftNovelty
 ./run.sh
 ```
 
-Open **http://127.0.0.1:8080**. Stop with `docker compose down`.
+Open **http://127.0.0.1:8080**. Stop with `docker compose down` or `docker-compose down`.
 
 The first run downloads images and `llama3.2:3b`. Typed logging still works if the model pull is still going.
+
+### Phone (Expo Go)
+
+Keep Docker running, then:
+
+```bash
+./run-expo.sh
+```
+
+Open **Expo Go (SDK 54)** on the phone → **Scan QR code** (not the normal camera). Allow the microphone. After **Stop**, the log screen shows **What you said**.
+
+If the phone cannot open `exp://…:8081`, they are not on the same network:
+
+```bash
+LAN_IP=192.168.1.23 ./run-expo.sh
+```
 
 ### Conda (without Docker)
 
 Port 8000 may already be used by another project. Use **8001** if you see “Address already in use”.
 
-You must be in **this** repo, not `~/backend`.
+You must be in **this** repo.
 
 **Terminal 1 — API**
 
 ```bash
 conda activate secondshift
-cd /home/goodluck/Desktop/MyProjects/Tutorial/SecondShiftNovelty/backend
+cd backend
 PYTHONPATH=. uvicorn app.main:app --reload --port 8001
 ```
 
 **Terminal 2 — website**
 
 ```bash
-cd /home/goodluck/Desktop/MyProjects/Tutorial/SecondShiftNovelty/frontend
+cd frontend
 VITE_API_URL=http://127.0.0.1:8001 npm run dev
 ```
 
@@ -301,7 +320,6 @@ Without Ollama, typed demo logging still works.
 
 ```bash
 conda activate secondshift
-cd /home/goodluck/Desktop/MyProjects/Tutorial/SecondShiftNovelty
 ./scripts/verify_all.sh
 ```
 
@@ -326,9 +344,12 @@ Paid staff + a simple nurse/GP view are in [PLAN_OF_ACTION.md](PLAN_OF_ACTION.md
 | Problem | What to do |
 |---|---|
 | `Address already in use` | Use `--port 8001` and set `VITE_API_URL` to match |
-| Watches `/home/goodluck/backend` | You `cd`’d the wrong folder. Use the `SecondShiftNovelty/backend` path above |
+| Watches the wrong `backend` | You `cd`’d the wrong folder. Use this repo’s `backend/` |
 | Mic sits on Start and never finishes | Click **Stop**. Or use **Log text** |
-| Whisper error | Type the sentence. First Whisper run may download the `small` model |
+| Whisper error | Type the sentence. First Whisper run may download the `base` model |
+| Expo Go “newer version” | Keep Expo Go on SDK 54. Do not update it |
+| Expo QR does nothing | Scan inside Expo Go, not the system camera |
+| Phone cannot connect | Same Wi-Fi as the computer. Then `LAN_IP=… ./run-expo.sh` |
 | Ollama not found | Install Ollama later; heuristic + typed log still demo the loop |
 | Empty page | Start **both** terminals; API first, then frontend |
 | Docker build is slow | First `./run.sh` installs Whisper/torch. Later runs reuse the image |

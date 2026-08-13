@@ -7,6 +7,9 @@ backend/data/*.pdf
 backend/data/tmp/
 frontend/node_modules/
 frontend/dist/
+mobile/node_modules/
+mobile/.expo/
+mobile/.claude/
 *.wav
 .env
 .DS_Store

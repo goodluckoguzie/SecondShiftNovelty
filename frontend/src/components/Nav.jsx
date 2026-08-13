@@ -10,7 +10,7 @@ const ITEMS = [
 export function Nav({ tab, onChange, hiddenTabs = [] }) {
   const items = ITEMS.filter((item) => !hiddenTabs.includes(item.id));
   return (
-    <nav className="shrink-0 border-t border-line bg-paper">
+    <nav className="shrink-0 border-t border-line bg-paper pb-2 pt-1">
       <div className="grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
         {items.map(({ id, label, Icon }) => {
           const active = tab === id;

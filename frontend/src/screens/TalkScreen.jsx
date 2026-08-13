@@ -9,6 +9,7 @@ export function TalkScreen({
   setTranscript,
   recording,
   busy,
+  status,
   confirmation,
   similar,
   flags,
@@ -48,8 +49,22 @@ export function TalkScreen({
             {recording ? "Stop recording" : "Start speaking"}
           </Press>
           <p className="-mt-2 text-sm text-muted">
-            {recording ? "Listening now. Stops after 15 seconds." : busy ? "Saving the log…" : "Say what happened, then press Stop."}
+            {recording
+              ? "Listening now. Stops after 15 seconds."
+              : status === "writing"
+                ? "Writing what you said…"
+                : status === "saving"
+                  ? "Saving the log…"
+                  : busy
+                    ? "Working…"
+                    : "Say what happened, then press Stop."}
           </p>
+          {transcript.trim() ? (
+            <div className="nhs-inset">
+              <p className="font-bold">What you said</p>
+              <p className="mt-2 text-base leading-relaxed">“{transcript.trim()}”</p>
+            </div>
+          ) : null}
           <button type="button" className="font-bold text-accent underline" onClick={() => setTyping(true)}>
             Or type instead
           </button>

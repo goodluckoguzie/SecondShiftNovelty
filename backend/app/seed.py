@@ -6,7 +6,8 @@ from .models import CareEvent, MedicationSchedule, PersonProfile, User
 
 DOSE_CHANGE = datetime(2026, 8, 7, 9, 0)
 
-WORKERS = ("Goodluck", "Abene", "Pelumi", "Okunola", "Kemi")
+WORKERS = ("Goodluck", "Abena", "Pelumi", "Okunola", "Kemi")
+_USER_RENAMES = {"Abene": "Abena"}
 
 PATIENTS = (
     ("Dad", 71, "father"),
@@ -23,6 +24,7 @@ PATIENTS = (
 
 
 def seed_if_empty(session: Session) -> None:
+    _rename_users(session)
     workers = _ensure_users(session)
     people = _ensure_people(session)
     _retire_old_demo_workers(session, workers)
@@ -31,6 +33,20 @@ def seed_if_empty(session: Session) -> None:
     _seed_dad_if_needed(session, people["Dad"], workers["Goodluck"])
     _seed_able_if_needed(session, people["Able"], workers["Pelumi"])
     _seed_other_patients(session, people, workers)
+
+
+def _rename_users(session: Session) -> None:
+    changed = False
+    found = {u.display_name: u for u in session.exec(select(User)).all()}
+    for old, new in _USER_RENAMES.items():
+        row = found.get(old)
+        if not row or new in found:
+            continue
+        row.display_name = new
+        session.add(row)
+        changed = True
+    if changed:
+        session.commit()
 
 
 def _ensure_users(session: Session) -> dict[str, User]:
@@ -279,7 +295,7 @@ def _seed_other_patients(session: Session, people: dict[str, PersonProfile], wor
     extras = [
         (
             "Margaret",
-            workers["Abene"],
+            workers["Abena"],
             [
                 (datetime(2026, 8, 10, 8, 15), "meal", "eaten", "ate porridge", "Margaret ate her porridge."),
                 (datetime(2026, 8, 11, 21, 0), "mood", "mood_low", "quiet and withdrawn", "Margaret was very quiet this evening."),
@@ -319,7 +335,7 @@ def _seed_other_patients(session: Session, people: dict[str, PersonProfile], wor
         ),
         (
             "Frank",
-            workers["Abene"],
+            workers["Abena"],
             [
                 (datetime(2026, 8, 8, 11, 0), "incident", "note", "needed two staff to stand", "Frank needed two of us to stand from the chair."),
                 (datetime(2026, 8, 11, 16, 30), "mood", "mood_low", "tearful in the lounge", "Frank was tearful in the lounge."),

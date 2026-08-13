@@ -43,6 +43,18 @@ export async function postJson(path, body) {
   return res.json();
 }
 
+export async function transcribeAudio(blob) {
+  const data = new FormData();
+  data.append("file", blob, "clip.webm");
+  const res = await fetch(`${API}/transcribe`, {
+    method: "POST",
+    headers: headers(),
+    body: data,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function logAudio(blob, extra = {}) {
   const data = new FormData();
   data.append("file", blob, "clip.webm");
@@ -51,6 +63,7 @@ export async function logAudio(blob, extra = {}) {
   if (extra.shift_id) params.set("shift_id", String(extra.shift_id));
   if (extra.logger_id) params.set("logger_id", String(extra.logger_id));
   if (extra.urgent) params.set("urgent", "true");
+  params.set("use_heuristic", "true");
   const res = await fetch(`${API}/log/audio?${params.toString()}`, {
     method: "POST",
     headers: headers(),
