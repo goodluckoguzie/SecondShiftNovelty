@@ -25,21 +25,59 @@ function headers(extra = {}) {
   return { "X-Demo-Role": demoRole, ...extra };
 }
 
+export function formatError(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return "Something went wrong.";
+  try {
+    const parsed = JSON.parse(raw);
+    const detail = parsed?.detail;
+    if (typeof detail === "string" && detail.trim()) return detail.trim();
+    if (Array.isArray(detail) && detail.length) {
+      const first = detail[0];
+      if (typeof first === "string" && first.trim()) return first.trim();
+      if (first?.msg) return String(first.msg).trim();
+    }
+    if (typeof parsed?.message === "string" && parsed.message.trim()) return parsed.message.trim();
+  } catch (_err) {
+    /* already plain text */
+  }
+  return raw;
+}
+
+export function speakFailMessage(err) {
+  const msg = formatError(err?.message || err);
+  if (/type the log/i.test(msg)) return msg;
+  if (/no names heard/i.test(msg)) return `${msg} Type the log instead.`;
+  return `Could not write what you said. ${msg} Type the log instead.`;
+}
+
 export async function getJson(path) {
   const res = await fetch(`${API}${withPerson(path)}`, { headers: headers() });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(formatError(await res.text()));
+  return res.json();
+}
+
+export async function patchJson(path, body) {
+  const res = await fetch(`${API}${path}`, {
+    method: "PATCH",
+    headers: headers({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) throw new Error(formatError(await res.text()));
   return res.json();
 }
 
 export async function postJson(path, body) {
   const payload = { ...body };
-  if (personId && payload.person_id == null) payload.person_id = personId;
+  if (personId && payload.person_id == null && !path.includes("/corridor")) {
+    payload.person_id = personId;
+  }
   const res = await fetch(`${API}${path}`, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(formatError(await res.text()));
   return res.json();
 }
 
@@ -51,7 +89,7 @@ export async function transcribeAudio(blob) {
     headers: headers(),
     body: data,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(formatError(await res.text()));
   return res.json();
 }
 
@@ -63,13 +101,13 @@ export async function logAudio(blob, extra = {}) {
   if (extra.shift_id) params.set("shift_id", String(extra.shift_id));
   if (extra.logger_id) params.set("logger_id", String(extra.logger_id));
   if (extra.urgent) params.set("urgent", "true");
-  params.set("use_heuristic", "true");
+  params.set("use_heuristic", "false");
   const res = await fetch(`${API}/log/audio?${params.toString()}`, {
     method: "POST",
     headers: headers(),
     body: data,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(formatError(await res.text()));
   return res.json();
 }
 

@@ -69,6 +69,44 @@ assert "72" in handover.get("markdown", "")
 hpdf = req("GET", "/handover/latest.pdf")
 assert hpdf[:4] == b"%PDF"
 print("handover PDF OK")
+
+board = req("GET", "/board")
+assert len(board.get("people") or []) >= 10, board
+print("wing board OK")
+
+people = req("GET", "/people")
+frank = next(p for p in people if p["name"] == "Frank")
+tearful = req("POST", "/log", {"transcript": "He was tearful in the lounge.", "use_heuristic": True, "person_id": frank["id"]})
+assert any(e.get("type") == "mood" for e in tearful.get("events") or []), tearful
+print("tearful mood OK")
+
+corridor = req("POST", "/log/corridor", {"transcript": "Able up at two. Frank was tearful.", "use_heuristic": True})
+assert {s.get("person_name") for s in corridor.get("slices") or []} == {"Able", "Frank"}
+print("corridor dump OK")
+
+users = req("GET", "/users")
+ravi = next(u for u in users if u.get("role") == "family")
+dad = next(p for p in people if p["name"] == "Dad")
+home = urllib.request.Request(
+    api + "/log",
+    data=json.dumps({
+        "transcript": "Barely touched his tea.",
+        "use_heuristic": True,
+        "person_id": dad["id"],
+        "logger_id": ravi["id"],
+    }).encode(),
+    method="POST",
+    headers={"Content-Type": "application/json", "X-Demo-Role": "family"},
+)
+with urllib.request.urlopen(home, timeout=60) as resp:
+    family_log = json.loads(resp.read())
+assert family_log["events"][0]["source"] == "from_home"
+print("family from_home OK")
+
+brief2 = req("POST", "/briefs", {"person_id": dad["id"]})
+assert "## From the shift" in brief2.get("markdown", "")
+assert "## From home" in brief2.get("markdown", "")
+print("two-column GP brief OK")
 PY
 
 echo "Verifying web UI..."

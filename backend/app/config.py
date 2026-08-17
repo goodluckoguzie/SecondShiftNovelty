@@ -18,6 +18,10 @@ DISCLAIMER = (
     "and does not give medical advice."
 )
 
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234")
+FAMILY_PASSWORD = os.getenv("FAMILY_PASSWORD", ADMIN_PASSWORD)
+STAFF_PASSWORD = os.getenv("STAFF_PASSWORD", ADMIN_PASSWORD)
+
 EMERGENCY_PHRASES = (
     "unconscious",
     "not breathing",

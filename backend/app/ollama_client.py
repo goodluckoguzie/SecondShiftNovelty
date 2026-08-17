@@ -8,12 +8,14 @@ import httpx
 from .config import OLLAMA_HOST, OLLAMA_MODEL
 
 EXTRACT_SYSTEM = """You are a care-log extraction engine for whoever is recording (family or support worker) for a person with dementia in the UK.
-Extract care events from the carer's message. Output strict JSON only.
+Unpack the spoken sentence into facts. Output strict JSON only.
 Never give medical advice, diagnosis, triage, or treatment suggestions.
+Never count how many times something happened this week. Never invent food, times, amounts, or places that were not said.
 If a medication time is ambiguous, set confidence below 0.7.
+Resolve relative times using "Now is" in the user message ("at two" at night is 02:00, "8pm" is 20:00). If you cannot resolve a time, set event_time null.
 
 JSON shape:
-{"events":[{"type":"medication|symptom|meal|sleep|mood|incident|note","subtype":"dose_late|dose_missed|confusion|agitation|appetite_low|vomiting|eaten|mood_low|note","event_time":"ISO-8601 if known else null","detail":"short","confidence":0.0}],"clarifying_question":null,"confirmation":"short UK English confirmation"}
+{"events":[{"type":"medication|symptom|meal|sleep|mood|incident|preference|note","subtype":"dose_late|dose_missed|confusion|agitation|appetite_low|vomiting|eaten|mood_low|not_himself|awake_night|settled_late|fall|about_me|note","event_time":"ISO-8601 if known else null","detail":"short UK English including food and time if they were said","meal":"breakfast|lunch|supper|snack|null","food":"what they ate if said else null","amount":"all|half|refused|barely|null","minutes_late":null,"place":"lounge|bedroom|garden|null","sequence":"after_meal|before_meds|after_meds|null","confidence":0.0}],"clarifying_question":null,"confirmation":"short UK English confirmation","guess":null}
 """
 
 QUESTIONS_SYSTEM = """You draft 3 to 5 short questions a family carer can ask a GP or memory clinic.

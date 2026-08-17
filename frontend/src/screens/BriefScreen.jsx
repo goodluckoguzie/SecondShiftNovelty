@@ -14,13 +14,18 @@ export function BriefScreen({
   onHandoverShift,
   onHandoverFamily,
   canWriteShift,
+  startKind = "gp",
 }) {
-  const [kind, setKind] = useState("gp");
+  const [kind, setKind] = useState(startKind);
   const [windowKind, setWindowKind] = useState(canWriteShift ? "shift" : "family");
   const [showForm, setShowForm] = useState(true);
 
   const preview = kind === "gp" ? briefMd : handoverMd;
   const hasPdf = kind === "gp" ? hasBrief : hasHandover;
+
+  useEffect(() => {
+    setKind(startKind);
+  }, [startKind]);
 
   useEffect(() => {
     setShowForm(!preview);

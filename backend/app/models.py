@@ -8,6 +8,8 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     display_name: str
     role: str = "support_worker"
+    family_person_id: Optional[int] = Field(default=None, index=True)
+    assigned_person_id: Optional[int] = Field(default=None, index=True)
 
 
 class PersonProfile(SQLModel, table=True):
@@ -17,6 +19,10 @@ class PersonProfile(SQLModel, table=True):
     conditions: str
     allergies: str = ""
     relationship: str = "father"
+    usual: str = ""
+    risks: str = ""
+    mobility: str = ""
+    hospital_return_at: Optional[datetime] = None
 
 
 class MedicationSchedule(SQLModel, table=True):
@@ -50,6 +56,8 @@ class CareEvent(SQLModel, table=True):
     raw_transcript: str = ""
     confidence: float = 1.0
     urgent: bool = False
+    source: str = "staff"
+    slots: str = ""
 
 
 class PatternFlag(SQLModel, table=True):

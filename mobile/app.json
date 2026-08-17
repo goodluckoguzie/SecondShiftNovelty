@@ -1,19 +1,20 @@
 {
   "expo": {
     "name": "Second Shift",
-    "slug": "second-shift",
-    "scheme": "secondshift",
-    "version": "1.0.0",
+    "slug": "secondshift-care",
+    "scheme": "secondshiftcare",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#005eb8"
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "uk.secondshift.care",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Second Shift uses the microphone so you can speak a care log.",
         "NSAppTransportSecurity": {
@@ -22,6 +23,7 @@
       }
     },
     "android": {
+      "package": "uk.secondshift.care",
       "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.INTERNET",

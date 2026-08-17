@@ -7,6 +7,18 @@ import { WebView } from "react-native-webview";
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || "http://172.20.10.2:8080";
 
+function apiMessage(text, fallback) {
+  const raw = String(text || "").trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.detail === "string" && parsed.detail.trim()) return parsed.detail.trim();
+  } catch (_err) {
+    /* plain text */
+  }
+  return raw;
+}
+
 function tellWeb(webRef, payload) {
   webRef.current?.injectJavaScript(
     `window.dispatchEvent(new CustomEvent("secondshift-native",{detail:${JSON.stringify(payload)}}));true;`,
@@ -28,7 +40,7 @@ function AppScreen() {
   const extraRef = useRef({});
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
-  const source = useMemo(() => ({ uri: APP_URL }), [tick]);
+  const source = useMemo(() => ({ uri: `${APP_URL}/?v=ss10` }), [tick]);
   const padTop = insets.top || (Platform.OS === "android" ? RNStatusBar.currentHeight || 28 : 0);
   const padBottom = insets.bottom || (Platform.OS === "android" ? 48 : 0);
 
@@ -59,6 +71,22 @@ function AppScreen() {
     recordingRef.current = recording;
   }
 
+  async function cancelNativeMic() {
+    const recording = recordingRef.current;
+    recordingRef.current = null;
+    if (!recording) {
+      tellWeb(webRef, { type: "mic-cancelled" });
+      return;
+    }
+    try {
+      await recording.stopAndUnloadAsync();
+    } catch (_err) {
+      /* already stopped */
+    }
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    tellWeb(webRef, { type: "mic-cancelled" });
+  }
+
   async function stopNativeMic() {
     const recording = recordingRef.current;
     recordingRef.current = null;
@@ -73,29 +101,31 @@ function AppScreen() {
     clip.append("file", { uri, name: "clip.m4a", type: "audio/mp4" });
     const heardRes = await fetch(`${APP_URL}/api/transcribe`, {
       method: "POST",
-      headers: { "X-Demo-Role": "support_worker" },
+      headers: { "X-Demo-Role": extra.role || "support_worker" },
       body: clip,
     });
     const heardText = await heardRes.text();
-    if (!heardRes.ok) throw new Error(heardText || `Could not write what you said (${heardRes.status})`);
+    if (!heardRes.ok) throw new Error(apiMessage(heardText, "Could not write what you said."));
     const heard = JSON.parse(heardText);
     const transcript = (heard.transcript || "").trim();
     if (!transcript) throw new Error("Heard nothing. Speak again, then press Stop.");
     tellWeb(webRef, { type: "mic-heard", transcript });
-    const logRes = await fetch(`${APP_URL}/api/log`, {
+    const role = extra.role || "support_worker";
+    const path = extra.mode === "corridor" ? "/api/log/corridor" : "/api/log";
+    const logRes = await fetch(`${APP_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Demo-Role": "support_worker" },
+      headers: { "Content-Type": "application/json", "X-Demo-Role": role },
       body: JSON.stringify({
         transcript,
         urgent: Boolean(extra.urgent),
-        use_heuristic: true,
+        use_heuristic: false,
         person_id: extra.person_id || null,
         shift_id: extra.shift_id || null,
         logger_id: extra.logger_id || null,
       }),
     });
     const logText = await logRes.text();
-    if (!logRes.ok) throw new Error(logText || `Could not save the log (${logRes.status})`);
+    if (!logRes.ok) throw new Error(apiMessage(logText, "Could not save the log."));
     const result = JSON.parse(logText);
     result.transcript = transcript;
     tellWeb(webRef, { type: "mic-result", result, transcript });
@@ -111,9 +141,13 @@ function AppScreen() {
     try {
       if (message.type === "mic-start") await startNativeMic(message);
       if (message.type === "mic-stop") await stopNativeMic();
+      if (message.type === "mic-cancel") await cancelNativeMic();
     } catch (err) {
       recordingRef.current = null;
-      tellWeb(webRef, { type: "mic-error", message: err.message || "Microphone failed. Type the log instead." });
+      tellWeb(webRef, {
+        type: "mic-error",
+        message: apiMessage(err.message, "Microphone failed. Type the log instead."),
+      });
     }
   }
 
@@ -124,7 +158,7 @@ function AppScreen() {
       {error ? (
         <View style={styles.error}>
           <Text style={styles.title}>Cannot reach Second Shift</Text>
-          <Text style={styles.body}>Phone and this computer must be on the same Wi‑Fi. The app is at:</Text>
+          <Text style={styles.body}>Phone and this computer must be on the same WiFi. The app is at:</Text>
           <Text style={styles.url}>{APP_URL}</Text>
           <Text style={styles.body}>{error}</Text>
           <Pressable style={styles.button} onPress={retry}>
@@ -152,6 +186,8 @@ function AppScreen() {
           }}
           onMessage={onWebMessage}
           injectedJavaScriptBeforeContentLoaded={"window.__SECOND_SHIFT_NATIVE__=true;true;"}
+          cacheEnabled={false}
+          incognito
           javaScriptEnabled
           domStorageEnabled
           allowsInlineMediaPlayback

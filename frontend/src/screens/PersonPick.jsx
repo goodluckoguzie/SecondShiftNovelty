@@ -46,7 +46,7 @@ export function PersonPick({ people, whoLabel, onBack, onChoose, busy }) {
             {people.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
-                {person.age ? ` · ${person.age}` : ""}
+                {person.age ? `, ${person.age}` : ""}
               </option>
             ))}
           </select>

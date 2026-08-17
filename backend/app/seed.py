@@ -1,13 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 
-from .models import CareEvent, MedicationSchedule, PersonProfile, User
+from .models import CareEvent, MedicationSchedule, PersonProfile, Shift, User
 
 DOSE_CHANGE = datetime(2026, 8, 7, 9, 0)
 
 WORKERS = ("Goodluck", "Abena", "Pelumi", "Okunola", "Kemi")
 _USER_RENAMES = {"Abene": "Abena"}
+_OLD_DEMO_WORKERS = {"Abene"}
 
 PATIENTS = (
     ("Dad", 71, "father"),
@@ -27,12 +28,15 @@ def seed_if_empty(session: Session) -> None:
     _rename_users(session)
     workers = _ensure_users(session)
     people = _ensure_people(session)
+    _ensure_family(session, people["Dad"])
     _retire_old_demo_workers(session, workers)
     workers = {u.display_name: u for u in session.exec(select(User)).all()}
     _backfill_person_ids(session, people["Dad"])
     _seed_dad_if_needed(session, people["Dad"], workers["Goodluck"])
     _seed_able_if_needed(session, people["Able"], workers["Pelumi"])
     _seed_other_patients(session, people, workers)
+    _apply_standout(session, people, workers)
+    _close_stale_shifts(session)
 
 
 def _rename_users(session: Session) -> None:
@@ -65,6 +69,29 @@ def _ensure_users(session: Session) -> dict[str, User]:
     return {u.display_name: u for u in session.exec(select(User)).all()}
 
 
+def _ensure_family(session: Session, dad: PersonProfile) -> User:
+    found = {u.display_name: u for u in session.exec(select(User)).all()}
+    ravi = found.get("Ravi")
+    if not ravi:
+        ravi = User(display_name="Ravi", role="family", family_person_id=dad.id)
+        session.add(ravi)
+        session.commit()
+        session.refresh(ravi)
+        return ravi
+    changed = False
+    if ravi.role != "family":
+        ravi.role = "family"
+        changed = True
+    if ravi.family_person_id != dad.id:
+        ravi.family_person_id = dad.id
+        changed = True
+    if changed:
+        session.add(ravi)
+        session.commit()
+        session.refresh(ravi)
+    return ravi
+
+
 def _ensure_people(session: Session) -> dict[str, PersonProfile]:
     found = {p.name: p for p in session.exec(select(PersonProfile)).all()}
     created = False
@@ -85,12 +112,24 @@ def _ensure_people(session: Session) -> dict[str, PersonProfile]:
     return {p.name: p for p in session.exec(select(PersonProfile)).all()}
 
 
+def _close_stale_shifts(session: Session) -> None:
+    now = datetime.utcnow()
+    changed = False
+    for shift in session.exec(select(Shift).where(Shift.ended_at == None)).all():  # noqa: E711
+        if now - shift.started_at <= timedelta(hours=14):
+            continue
+        shift.ended_at = shift.started_at + timedelta(hours=8)
+        session.add(shift)
+        changed = True
+    if changed:
+        session.commit()
+
+
 def _retire_old_demo_workers(session: Session, workers: dict[str, User]) -> None:
-    keep = set(WORKERS) | {"Dr Chen"}
     fallback = workers.get("Goodluck")
     if not fallback:
         return
-    leftover = [u for u in session.exec(select(User)).all() if u.display_name not in keep]
+    leftover = [u for u in session.exec(select(User)).all() if u.display_name in _OLD_DEMO_WORKERS]
     if not leftover:
         return
     leftover_ids = {u.id for u in leftover}
@@ -377,6 +416,111 @@ def _seed_other_patients(session: Session, people: dict[str, PersonProfile], wor
                     confidence=0.9,
                 )
             )
+    if added:
+        session.add_all(added)
+        session.commit()
+
+
+def _has_quote(session: Session, person_id: int, quote: str) -> bool:
+    return any(
+        (e.raw_transcript or "") == quote
+        for e in session.exec(select(CareEvent).where(CareEvent.person_id == person_id)).all()
+    )
+
+
+def _apply_standout(session: Session, people: dict[str, PersonProfile], workers: dict[str, User]) -> None:
+    now = datetime.utcnow()
+    dad = people["Dad"]
+    able = people["Able"]
+    frank = people["Frank"]
+    margaret = people["Margaret"]
+    ravi = _ensure_family(session, dad)
+    abena = workers.get("Abena") or workers.get("Goodluck")
+    pelumi = workers.get("Pelumi") or workers.get("Goodluck")
+
+    dad.hospital_return_at = now - timedelta(hours=20)
+    dad.usual = dad.usual or "sits with the radio on"
+    frank.usual = "sings in the lounge"
+    frank.mobility = frank.mobility or "walks with a frame"
+    margaret.risks = "chokes on thin fluids"
+    able.risks = able.risks or ""
+    goodluck = workers.get("Goodluck")
+    if goodluck and goodluck.assigned_person_id != dad.id:
+        goodluck.assigned_person_id = dad.id
+        session.add(goodluck)
+    session.add_all([dad, frank, margaret, able])
+    session.commit()
+
+    extras = [
+        (
+            able,
+            pelumi,
+            now - timedelta(hours=2),
+            "meal",
+            "eaten",
+            "ate breakfast",
+            "Able ate breakfast this morning.",
+            "staff",
+        ),
+        (
+            frank,
+            abena,
+            now - timedelta(hours=1),
+            "mood",
+            "mood_low",
+            "tearful in the lounge",
+            "Frank was tearful just now.",
+            "staff",
+        ),
+        (
+            margaret,
+            abena,
+            now - timedelta(hours=3),
+            "meal",
+            "appetite_low",
+            "left her drink",
+            "Margaret left her drink.",
+            "staff",
+        ),
+        (
+            dad,
+            workers["Goodluck"],
+            now - timedelta(hours=4),
+            "medication",
+            "dose_late",
+            "evening medicines 25 minutes late",
+            "Gave dad his evening meds 25 minutes late after hospital.",
+            "staff",
+        ),
+        (
+            dad,
+            ravi,
+            now - timedelta(hours=5),
+            "meal",
+            "appetite_low",
+            "barely touched supper",
+            "Barely touched supper.",
+            "from_home",
+        ),
+    ]
+    added = []
+    for person, logger, when, typ, subtype, detail, quote, source in extras:
+        if not logger or _has_quote(session, person.id, quote):
+            continue
+        added.append(
+            CareEvent(
+                person_id=person.id,
+                logger_id=logger.id,
+                logged_at=when,
+                event_time=when,
+                type=typ,
+                subtype=subtype,
+                detail=detail,
+                raw_transcript=quote,
+                confidence=0.9,
+                source=source,
+            )
+        )
     if added:
         session.add_all(added)
         session.commit()

@@ -2,107 +2,223 @@ import { useState } from "react";
 import { BrandBar } from "../components/BrandBar.jsx";
 import { Press } from "../components/Press.jsx";
 
-export function RoleGate({ workers, onChooseWorker, onChooseClinical }) {
+export function RoleGate({
+  workers,
+  people = [],
+  onChooseWorker,
+  onChooseFamily,
+  onChooseClinical,
+  onChooseAdmin,
+  gateError,
+}) {
   const [path, setPath] = useState("");
   const [workerId, setWorkerId] = useState("");
+  const [personId, setPersonId] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function continueOn() {
-    if (!path) {
-      setError("Select how you are using this");
-      return;
-    }
-    if (path === "clinical") {
-      setError("");
-      onChooseClinical();
-      return;
-    }
+  function goShift() {
     const worker = workers.find((w) => String(w.id) === workerId);
     if (!worker) {
       setError("Select your name");
       return;
     }
-    setError("");
-    onChooseWorker(worker);
+    if (!password.trim()) {
+      setError("Type the password");
+      return;
+    }
+    onChooseWorker(worker, password);
+  }
+
+  function goFamily() {
+    const person = (people || []).find((p) => String(p.id) === personId);
+    if (!person) {
+      setError("Select the person");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Type the password");
+      return;
+    }
+    onChooseFamily(person, password);
+  }
+
+  function goAdmin() {
+    if (!password.trim()) {
+      setError("Type the password");
+      return;
+    }
+    onChooseAdmin(password);
   }
 
   return (
     <div className="mx-auto flex h-screen max-w-md flex-col bg-soft">
       <BrandBar />
       <main className="flex-1 overflow-auto px-5 py-6">
-        <h1 className="text-[2rem] font-bold leading-tight">Who is here?</h1>
+        <h1 className="text-[2rem] font-bold leading-tight">Who are you?</h1>
 
-        {error && (
+        {(error || gateError) && (
           <p className="nhs-error mt-5" role="alert">
-            {error}
+            {error || gateError}
           </p>
         )}
 
-        <fieldset className="mt-6">
-          <legend className="text-lg font-bold">How are you using this?</legend>
-          <label className="nhs-radio">
-            <input
-              type="radio"
-              name="path"
-              value="shift"
-              checked={path === "shift"}
-              onChange={() => {
-                setPath("shift");
+        {!path ? (
+          <div className="mt-6 space-y-3">
+            <button type="button" className="tap-card w-full text-left" onClick={() => {
+              setPassword("");
+              setWorkerId("");
+              setError("");
+              setPath("shift");
+            }}>
+              <span className="block text-xl font-bold">Support worker</span>
+              <span className="mt-1 block text-base text-muted">I work here. Pick your name next</span>
+            </button>
+            <button
+              type="button"
+              className="tap-card w-full text-left"
+              onClick={() => {
+                setPassword("");
+                setPersonId("");
                 setError("");
-              }}
-            />
-            <span>
-              <span className="block text-lg font-bold">I am on shift</span>
-              <span className="block text-base text-muted">Speak or type a log</span>
-            </span>
-          </label>
-          <label className="nhs-radio">
-            <input
-              type="radio"
-              name="path"
-              value="clinical"
-              checked={path === "clinical"}
-              onChange={() => {
-                setPath("clinical");
-                setWorkerId("");
-                setError("");
-              }}
-            />
-            <span>
-              <span className="block text-lg font-bold">Nurse or GP</span>
-              <span className="block text-base text-muted">Read only. Same record</span>
-            </span>
-          </label>
-        </fieldset>
-
-        {path === "shift" && (
-          <label className="mt-6 block">
-            <span className="mb-2 block text-lg font-bold">Your name</span>
-            <select
-              className={`nhs-select ${error === "Select your name" ? "nhs-select-error" : ""}`}
-              value={workerId}
-              onChange={(e) => {
-                setWorkerId(e.target.value);
-                setError("");
+                if (!(people || []).length) {
+                  setError("No one is on this wing yet");
+                  return;
+                }
+                setPath("family");
               }}
             >
-              <option value="">{workers.length ? "Select your name" : "Loading names…"}</option>
-              {workers.map((worker) => (
-                <option key={worker.id} value={worker.id}>
-                  {worker.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+              <span className="block text-xl font-bold">Family</span>
+              <span className="mt-1 block text-base text-muted">A note from home. Pick who it is about</span>
+            </button>
+            <button type="button" className="tap-card w-full text-left" onClick={() => onChooseClinical()}>
+              <span className="block text-xl font-bold">Nurse or GP</span>
+              <span className="mt-1 block text-base text-muted">Read only</span>
+            </button>
+            <button
+              type="button"
+              className="tap-card w-full text-left"
+              onClick={() => {
+                setPassword("");
+                setError("");
+                setPath("admin");
+              }}
+            >
+              <span className="block text-xl font-bold">Admin</span>
+              <span className="mt-1 block text-base text-muted">Add people and staff</span>
+            </button>
+          </div>
+        ) : null}
 
-        <div className="mt-8">
-          <Press tone="primary" onClick={continueOn}>
-            Continue
-          </Press>
-        </div>
+        {path === "shift" ? (
+          <div className="mt-6 space-y-4">
+            <button type="button" className="text-lg font-bold text-accent underline" onClick={() => setPath("")}>
+              Back
+            </button>
+            <label className="block">
+              <span className="mb-2 block text-xl font-bold">Your name</span>
+              <select
+                className={`nhs-select ${error === "Select your name" ? "nhs-select-error" : ""}`}
+                value={workerId}
+                onChange={(e) => {
+                  setWorkerId(e.target.value);
+                  setError("");
+                }}
+              >
+                <option value="">{workers.length ? "Select your name" : "Loading…"}</option>
+                {workers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {worker.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-xl font-bold">Password</span>
+              <input
+                type="password"
+                className="nhs-select"
+                value={password}
+                autoComplete="off"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+            <Press tone="primary" onClick={goShift}>
+              Continue
+            </Press>
+          </div>
+        ) : null}
 
-        <p className="mt-8 text-sm leading-relaxed text-muted">
+        {path === "family" ? (
+          <div className="mt-6 space-y-4">
+            <button type="button" className="text-lg font-bold text-accent underline" onClick={() => setPath("")}>
+              Back
+            </button>
+            <label className="block">
+              <span className="mb-2 block text-xl font-bold">Who is this about?</span>
+              <select
+                className={`nhs-select ${error === "Select the person" ? "nhs-select-error" : ""}`}
+                value={personId}
+                onChange={(e) => {
+                  setPersonId(e.target.value);
+                  setError("");
+                }}
+              >
+                <option value="">{people.length ? "Select a person" : "Loading…"}</option>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-xl font-bold">Password</span>
+              <input
+                type="password"
+                className="nhs-select"
+                value={password}
+                autoComplete="off"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+            <Press tone="primary" onClick={goFamily}>
+              Continue
+            </Press>
+          </div>
+        ) : null}
+
+        {path === "admin" ? (
+          <div className="mt-6 space-y-4">
+            <button type="button" className="text-lg font-bold text-accent underline" onClick={() => setPath("")}>
+              Back
+            </button>
+            <label className="block">
+              <span className="mb-2 block text-xl font-bold">Admin password</span>
+              <input
+                type="password"
+                className="nhs-select"
+                value={password}
+                autoComplete="off"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+            <Press tone="primary" onClick={goAdmin}>
+              Continue
+            </Press>
+          </div>
+        ) : null}
+
+        <p className="mt-10 text-sm leading-relaxed text-muted">
           Demo only. This organises notes. It does not diagnose, and it is not an NHS service.
         </p>
       </main>

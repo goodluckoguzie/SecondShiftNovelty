@@ -1,120 +1,183 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Press } from "../components/Press.jsx";
-import { eventLabel, shortWhen } from "../labels.js";
+import { eventLabel, joinCopy, shortWhen } from "../labels.js";
 
 export function TalkScreen({
   canWrite,
+  aboutId,
+  onAboutChange,
+  people,
+  personName,
+  assignedPersonId,
   transcript,
   setTranscript,
   recording,
   busy,
   status,
   confirmation,
-  similar,
-  flags,
-  urgent,
-  setUrgent,
+  warning,
+  slices,
+  events,
   onStart,
   onStop,
   onLog,
   onOpenQuote,
-  onOpenWatch,
+  onOpenSlice,
+  lockPerson,
 }) {
   const [typing, setTyping] = useState(false);
+  const aboutWing = aboutId === "wing" || aboutId == null;
+  const notes = aboutWing ? [] : (events || []).slice(0, 12);
+  const ordered = [...(people || [])].sort((a, b) => {
+    if (a.id === assignedPersonId) return -1;
+    if (b.id === assignedPersonId) return 1;
+    return (a.name || "").localeCompare(b.name || "");
+  });
 
-  if (!canWrite) {
-    return (
-      <section className="space-y-2">
-        <PageHeader title="Log" hint="Open History to read what happened." />
-      </section>
-    );
-  }
-
-  const watchCount = flags?.length || 0;
+  useEffect(() => {
+    if (confirmation) setTyping(false);
+  }, [confirmation]);
 
   return (
     <section className="space-y-5">
-      <PageHeader title="What happened?" />
+      <PageHeader
+        title="Speak"
+        hint={
+          aboutWing
+            ? "Say the name, then what happened. You can name more than one person."
+            : `This note is for ${personName || "them"} only.`
+        }
+      />
 
-      {watchCount > 0 && (
-        <button type="button" className="text-left font-bold text-accent underline" onClick={onOpenWatch}>
-          {watchCount} {watchCount === 1 ? "thing" : "things"} to watch
-        </button>
-      )}
+      {lockPerson ? <p className="tap-card text-lg font-bold">{personName}</p> : null}
 
-      {!typing ? (
-        <>
-          <Press tone={recording ? "warning" : "primary"} onClick={recording ? onStop : onStart} disabled={busy}>
-            {recording ? "Stop recording" : "Start speaking"}
-          </Press>
-          <p className="-mt-2 text-sm text-muted">
-            {recording
-              ? "Listening now. Stops after 15 seconds."
-              : status === "writing"
-                ? "Writing what you said…"
-                : status === "saving"
-                  ? "Saving the log…"
-                  : busy
-                    ? "Working…"
-                    : "Say what happened, then press Stop."}
-          </p>
-          {transcript.trim() ? (
-            <div className="nhs-inset">
-              <p className="font-bold">What you said</p>
-              <p className="mt-2 text-base leading-relaxed">“{transcript.trim()}”</p>
-            </div>
-          ) : null}
-          <button type="button" className="font-bold text-accent underline" onClick={() => setTyping(true)}>
-            Or type instead
-          </button>
-        </>
+      {canWrite ? (
+        !typing ? (
+          <>
+            <Press tone={recording ? "warning" : "primary"} onClick={recording ? onStop : onStart} disabled={busy}>
+              {recording ? "Stop" : "Speak"}
+            </Press>
+            <p className="-mt-2 text-center text-lg text-muted">
+              {recording
+                ? aboutWing
+                  ? "Listening. Name the person, then the line."
+                  : "Listening…"
+                : status === "writing" || status === "saving"
+                  ? "Saving…"
+                  : aboutWing
+                    ? "Example: Able up at two. Frank was tearful."
+                    : "Press Speak. Talk. Press Stop."}
+            </p>
+            {transcript.trim() ? (
+              <div className="tap-card">
+                <p className="font-bold">You said</p>
+                <p className="mt-2 text-lg leading-relaxed">“{transcript.trim()}”</p>
+              </div>
+            ) : null}
+            {confirmation ? <p className="nhs-success text-lg font-bold">{confirmation}</p> : null}
+            {warning ? <p className="nhs-error text-base">{warning}</p> : null}
+            {slices?.length ? (
+              <ul className="overflow-hidden rounded-xl border-2 border-line bg-paper">
+                {slices.map((slice) => (
+                  <li key={slice.person_id || slice.person_name} className="border-b border-line last:border-b-0">
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left"
+                      onClick={() => onOpenSlice?.(slice)}
+                      disabled={!slice.person_id}
+                    >
+                      <p className="font-bold">{slice.person_name}</p>
+                      <p className="text-base">{slice.transcript}</p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <textarea
+              aria-label="What happened"
+              className="min-h-[120px] w-full rounded-lg border-2 border-input bg-paper p-3 text-lg leading-relaxed"
+              placeholder={aboutWing ? "Able up at two. Frank was tearful." : "He barely touched supper."}
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+            />
+            <Press tone="primary" onClick={onLog} disabled={!transcript.trim() || busy}>
+              Save
+            </Press>
+            {confirmation ? <p className="nhs-success text-lg font-bold">{confirmation}</p> : null}
+            {warning ? <p className="nhs-error text-base">{warning}</p> : null}
+          </>
+        )
       ) : (
-        <>
-          <textarea
-            aria-label="What happened"
-            className="min-h-[110px] w-full rounded-md border-2 border-input bg-paper p-3 text-base leading-relaxed"
-            placeholder="Gave dad his 8pm meds, 40 minutes late."
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-          />
-          <Press tone="primary" onClick={onLog} disabled={!transcript.trim() || busy}>
-            Save log
-          </Press>
-          <button type="button" className="font-bold text-accent underline" onClick={() => setTyping(false)}>
-            Or speak instead
-          </button>
-        </>
+        <p className="text-lg text-muted">Read only. Open a name on the wing to see notes.</p>
       )}
 
-      <label className="flex items-start gap-3 text-base leading-relaxed">
-        <input
-          type="checkbox"
-          className="mt-1 h-5 w-5 accent-success"
-          checked={urgent}
-          onChange={(e) => setUrgent(e.target.checked)}
-        />
-        Put this on the GP page as urgent
-      </label>
-
-      {confirmation && <p className="nhs-success text-base leading-relaxed">{confirmation}</p>}
-
-      {similar?.length > 0 && (
-        <div className="nhs-inset">
-          <p className="font-bold">This has come up before</p>
-          <p className="mt-1 text-sm text-muted">Last 14 days. Not a diagnosis.</p>
-          <ul className="mt-3 space-y-2">
-            {similar.map((event) => (
-              <li key={event.id}>
-                <button type="button" className="text-left" onClick={() => onOpenQuote(event)}>
-                  <span className="font-bold text-accent underline">{eventLabel(event.type, event.subtype)}</span>
-                  <span className="ml-2 text-muted">{shortWhen(event.event_time)}</span>
-                </button>
-              </li>
+      {!lockPerson ? (
+        <div>
+          <p className="mb-2 text-lg font-bold">Who is this about?</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`about-chip ${aboutWing ? "about-chip-on" : ""}`}
+              onClick={() => onAboutChange("wing")}
+            >
+              Say the name
+            </button>
+            {ordered.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                className={`about-chip ${!aboutWing && Number(aboutId) === person.id ? "about-chip-on" : ""}`}
+                onClick={() => onAboutChange(person.id)}
+              >
+                {person.name}
+              </button>
             ))}
-          </ul>
+          </div>
+          <p className="mt-2 text-base text-muted">
+            Leave this on Say the name, and say who you mean. Tap a name only if you want this note locked to them.
+          </p>
         </div>
-      )}
+      ) : null}
+
+      {canWrite ? (
+        <button
+          type="button"
+          className="text-lg font-bold text-accent underline"
+          onClick={() => setTyping((value) => !value)}
+        >
+          {typing ? "Speak instead" : "Type instead"}
+        </button>
+      ) : null}
+
+      {!aboutWing ? (
+        <div className="tap-card">
+          <p className="text-xl font-bold">{personName ? `Notes for ${personName}` : "Notes"}</p>
+          {notes.length ? (
+            <ul className="mt-3 divide-y divide-line">
+              {notes.map((event) => (
+                <li key={event.id} className="py-3">
+                  <button type="button" className="w-full text-left" onClick={() => onOpenQuote(event)}>
+                    <p className="text-sm text-muted">
+                      {joinCopy(
+                        eventLabel(event.type, event.subtype),
+                        event.logger_label,
+                        event.event_time ? shortWhen(event.event_time) : "",
+                      )}
+                    </p>
+                    <p className="mt-1 text-base leading-relaxed">{event.detail || event.raw_transcript}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-base text-muted">Nothing written yet.</p>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

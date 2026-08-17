@@ -49,6 +49,13 @@ def test_able_vomiting_banner_and_evidence(client):
     assert any("sick" in (e["raw_transcript"] or "").lower() or "vomit" in (e["raw_transcript"] or "").lower() for e in vomit["evidence"])
 
 
+def test_board_shows_able_vomiting_flag(client):
+    able = _able_id(client)
+    board = client.get("/board").json()
+    row = next(p for p in board["people"] if p["id"] == able)
+    assert any(f["subtype"] == "vomiting" for f in row["flags"])
+
+
 def test_clinician_cannot_log(client):
     response = client.post(
         "/log",

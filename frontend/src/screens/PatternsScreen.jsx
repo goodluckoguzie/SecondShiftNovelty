@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BackLink } from "../components/BackLink.jsx";
 import { flagTitle, shortWhen } from "../labels.js";
 import { theme } from "../theme.js";
@@ -45,8 +45,50 @@ function WatchItem({ flag, onOpenQuote }) {
   );
 }
 
-export function PatternsScreen({ personName, chart, flags, onOpenQuote, onBack, backLabel }) {
+export function WeekChart({ chart, focus }) {
   const hasChart = Boolean(chart?.days?.length);
+  if (!hasChart) return null;
+  const showConfusion = focus !== "vomiting" && focus !== "appetite_low";
+  const showVomiting = focus !== "confusion" && focus !== "not_himself" && focus !== "medication";
+  const title =
+    focus === "vomiting"
+      ? "Vomiting logs this week"
+      : focus === "confusion"
+        ? "Confusion logs this week"
+        : "Confusion and vomiting this week";
+  const doseDay = chart.dose_change
+    ? new Date(chart.dose_change).toLocaleDateString("en-GB", { weekday: "short" })
+    : null;
+
+  return (
+    <div>
+      <h3 className="text-xl font-bold">{title}</h3>
+      <p className="mt-1 text-sm text-muted">Count of logs. A rules engine, not a diagnosis.</p>
+      <div className="mt-3 h-52">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chart.days}>
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.color.line} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: theme.color.ink }} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: theme.color.ink }} width={28} />
+            <Tooltip />
+            {showConfusion && showVomiting ? <Legend /> : null}
+            {showConfusion ? <Bar dataKey="confusion" name="Confusion" fill={theme.color.darkBlue} /> : null}
+            {showVomiting ? <Bar dataKey="vomiting" name="Vomiting" fill={theme.color.accent} /> : null}
+            {doseDay ? (
+              <ReferenceLine
+                x={doseDay}
+                stroke={theme.color.muted}
+                label={{ value: "dose change", fill: theme.color.muted, fontSize: 12 }}
+              />
+            ) : null}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+export function PatternsScreen({ personName, chart, flags, onOpenQuote, onBack, backLabel }) {
   const openFlags = flags || [];
 
   return (
@@ -67,31 +109,9 @@ export function PatternsScreen({ personName, chart, flags, onOpenQuote, onBack, 
         </div>
       )}
 
-      {hasChart && (
-        <div className="mt-8">
-          <h3 className="text-xl font-bold">This week</h3>
-          <p className="mt-1 text-sm text-muted">Confusion and vomiting. A rules engine counts these.</p>
-          <div className="mt-3 h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart.days}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme.color.line} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: theme.color.ink }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: theme.color.ink }} width={28} />
-                <Tooltip />
-                <Bar dataKey="confusion" name="Confusion" fill={theme.color.darkBlue} />
-                <Bar dataKey="vomiting" name="Vomiting" fill={theme.color.accent} />
-                {chart.dose_change && (
-                  <ReferenceLine
-                    x={new Date(chart.dose_change).toLocaleDateString("en-GB", { weekday: "short" })}
-                    stroke={theme.color.muted}
-                    label={{ value: "dose change", fill: theme.color.muted, fontSize: 12 }}
-                  />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      <div className="mt-8">
+        <WeekChart chart={chart} />
+      </div>
     </section>
   );
 }

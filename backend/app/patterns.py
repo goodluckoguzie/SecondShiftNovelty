@@ -5,7 +5,8 @@ from typing import Iterable, Optional
 
 from sqlmodel import Session, select
 
-from .models import CareEvent, MedicationSchedule, PatternFlag
+from .models import CareEvent, MedicationSchedule, PatternFlag, PersonProfile
+from .slots import unpack_slots
 
 
 def _in_window(events: Iterable[CareEvent], days: int = 7) -> list[CareEvent]:
@@ -126,17 +127,66 @@ def _flags_for_person(session: Session, person_id: Optional[int], now: datetime)
             if m.event_time <= vomit.event_time <= m.event_time + timedelta(hours=2)
         ]
         if paired:
+            food = next(
+                (unpack_slots(item.slots).get("food") for item in paired + [vomit] if unpack_slots(item.slots).get("food")),
+                None,
+            )
+            followed = f"followed {food}" if food else "followed a meal"
             flags.append(
                 PatternFlag(
                     person_id=person_id,
                     created_at=now,
                     kind="meal_then_symptom",
                     subtype="vomiting",
-                    message="Vomiting followed a meal within 2 hours. See the cited logs.",
+                    message=f"Vomiting {followed} within 2 hours. See the cited logs.",
                     evidence_event_ids=_ids(paired + [vomit]),
                 )
             )
             break
+
+    person = session.get(PersonProfile, person_id) if person_id is not None else None
+    if person and person.hospital_return_at:
+        returned = person.hospital_return_at
+        window72 = now - timedelta(hours=72)
+        if returned >= window72:
+            after = [e for e in events if e.event_time >= returned]
+            if after:
+                flags.append(
+                    PatternFlag(
+                        person_id=person_id,
+                        created_at=now,
+                        kind="hospital_return",
+                        subtype="hospital_return",
+                        message=(
+                            f"Back from hospital since {returned.strftime('%d %b %H:%M')}. "
+                            f"{len(after)} log(s) in that window."
+                        ),
+                        related_date=returned,
+                        evidence_event_ids=_ids(after[:8]),
+                    )
+                )
+
+    if person and (person.usual or "").strip():
+        recent_mood = [
+            e
+            for e in window7
+            if e.subtype in {"mood_low", "not_himself"} or e.type == "mood"
+        ]
+        if recent_mood:
+            last = max(recent_mood, key=lambda e: e.event_time)
+            flags.append(
+                PatternFlag(
+                    person_id=person_id,
+                    created_at=now,
+                    kind="not_himself_baseline",
+                    subtype="not_himself",
+                    message=(
+                        f"{person.name} was {last.detail or 'not himself'}. "
+                        f"He usually {person.usual.rstrip('.')}."
+                    ),
+                    evidence_event_ids=_ids([last]),
+                )
+            )
 
     return flags
 
