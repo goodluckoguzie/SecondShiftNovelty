@@ -3,15 +3,17 @@ from datetime import datetime, timedelta
 from sqlmodel import Session, select
 
 from .models import CareEvent, MedicationSchedule, PersonProfile, Shift, User
+from .patterns import recompute_flags
 
 DOSE_CHANGE = datetime(2026, 8, 7, 9, 0)
 
 WORKERS = ("Goodluck", "Abena", "Pelumi", "Okunola", "Kemi")
+_PERSON_RENAMES = {"Dad": "Dou"}
 _USER_RENAMES = {"Abene": "Abena"}
 _OLD_DEMO_WORKERS = {"Abene"}
 
 PATIENTS = (
-    ("Dad", 71, "father"),
+    ("Dou", 71, "father"),
     ("Able", 78, "resident"),
     ("Margaret", 84, "resident"),
     ("Harold", 80, "resident"),
@@ -27,16 +29,31 @@ PATIENTS = (
 def seed_if_empty(session: Session) -> None:
     _rename_users(session)
     workers = _ensure_users(session)
+    _rename_people(session)
     people = _ensure_people(session)
-    _ensure_family(session, people["Dad"])
+    _ensure_family(session, people["Dou"])
     _retire_old_demo_workers(session, workers)
     workers = {u.display_name: u for u in session.exec(select(User)).all()}
-    _backfill_person_ids(session, people["Dad"])
-    _seed_dad_if_needed(session, people["Dad"], workers["Goodluck"])
+    _backfill_person_ids(session, people["Dou"])
+    _seed_dad_if_needed(session, people["Dou"], workers["Goodluck"])
     _seed_able_if_needed(session, people["Able"], workers["Pelumi"])
     _seed_other_patients(session, people, workers)
     _apply_standout(session, people, workers)
     _close_stale_shifts(session)
+
+
+def _rename_people(session: Session) -> None:
+    changed = False
+    found = {p.name: p for p in session.exec(select(PersonProfile)).all()}
+    for old, new in _PERSON_RENAMES.items():
+        row = found.get(old)
+        if not row or new in found:
+            continue
+        row.name = new
+        session.add(row)
+        changed = True
+    if changed:
+        session.commit()
 
 
 def _rename_users(session: Session) -> None:
@@ -430,13 +447,16 @@ def _has_quote(session: Session, person_id: int, quote: str) -> bool:
 
 def _apply_standout(session: Session, people: dict[str, PersonProfile], workers: dict[str, User]) -> None:
     now = datetime.utcnow()
-    dad = people["Dad"]
+    dad = people["Dou"]
     able = people["Able"]
     frank = people["Frank"]
     margaret = people["Margaret"]
+    joyce = people["Joyce"]
+    evelyn = people["Evelyn"]
     ravi = _ensure_family(session, dad)
     abena = workers.get("Abena") or workers.get("Goodluck")
     pelumi = workers.get("Pelumi") or workers.get("Goodluck")
+    goodluck = workers.get("Goodluck")
 
     dad.hospital_return_at = now - timedelta(hours=20)
     dad.usual = dad.usual or "sits with the radio on"
@@ -444,70 +464,62 @@ def _apply_standout(session: Session, people: dict[str, PersonProfile], workers:
     frank.mobility = frank.mobility or "walks with a frame"
     margaret.risks = "chokes on thin fluids"
     able.risks = able.risks or ""
-    goodluck = workers.get("Goodluck")
     if goodluck and goodluck.assigned_person_id != dad.id:
         goodluck.assigned_person_id = dad.id
         session.add(goodluck)
     session.add_all([dad, frank, margaret, able])
     session.commit()
 
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = today - timedelta(days=1)
     extras = [
-        (
-            able,
-            pelumi,
-            now - timedelta(hours=2),
-            "meal",
-            "eaten",
-            "ate breakfast",
-            "Able ate breakfast this morning.",
-            "staff",
-        ),
-        (
-            frank,
-            abena,
-            now - timedelta(hours=1),
-            "mood",
-            "mood_low",
-            "tearful in the lounge",
-            "Frank was tearful just now.",
-            "staff",
-        ),
-        (
-            margaret,
-            abena,
-            now - timedelta(hours=3),
-            "meal",
-            "appetite_low",
-            "left her drink",
-            "Margaret left her drink.",
-            "staff",
-        ),
-        (
-            dad,
-            workers["Goodluck"],
-            now - timedelta(hours=4),
-            "medication",
-            "dose_late",
-            "evening medicines 25 minutes late",
-            "Gave dad his evening meds 25 minutes late after hospital.",
-            "staff",
-        ),
-        (
-            dad,
-            ravi,
-            now - timedelta(hours=5),
-            "meal",
-            "appetite_low",
-            "barely touched supper",
-            "Barely touched supper.",
-            "from_home",
-        ),
+        # Dou — today
+        (dad, goodluck, today + timedelta(hours=8, minutes=10), "meal", "eaten", "ate porridge", "Dou ate his porridge this morning.", "staff"),
+        (dad, abena, today + timedelta(hours=8, minutes=40), "medication", "dose_given", "morning tablets given", "Gave Dou his morning tablets on time.", "staff"),
+        (dad, goodluck, today + timedelta(hours=11, minutes=20), "mood", "mood_low", "quiet in the lounge", "Dou was quiet in the lounge after coffee.", "staff"),
+        # Dou — yesterday
+        (dad, ravi, yesterday + timedelta(hours=19, minutes=5), "meal", "appetite_low", "barely touched supper", "Barely touched supper.", "from_home"),
+        (dad, goodluck, yesterday + timedelta(hours=20, minutes=40), "medication", "dose_late", "evening medicines 25 minutes late", "Gave dad his evening meds 25 minutes late after hospital.", "staff"),
+        (dad, abena, yesterday + timedelta(hours=21, minutes=10), "symptom", "confusion", "more confused this evening", "Dou was more confused again this evening.", "staff"),
+        (dad, goodluck, yesterday + timedelta(hours=2, minutes=15), "sleep", "awake_night", "up at two", "Dou was up at two looking for his coat.", "staff"),
+        # Dou — week patterns
+        (dad, abena, now - timedelta(days=2, hours=3), "symptom", "confusion", "confused after supper", "Confused after supper again.", "staff"),
+        (dad, goodluck, now - timedelta(days=3, hours=4), "medication", "dose_late", "evening medicines 40 minutes late", "Evening pills about 40 minutes late.", "staff"),
+        (dad, ravi, now - timedelta(days=4, hours=5), "meal", "appetite_low", "left most of supper", "Left most of his supper at home.", "from_home"),
+        # Able — meal then vomit story
+        (able, pelumi, today + timedelta(hours=7, minutes=45), "meal", "eaten", "ate breakfast", "Able ate breakfast this morning.", "staff"),
+        (able, pelumi, now - timedelta(days=1, hours=4), "meal", "eaten", "ate supper", "Able has eaten his supper.", "staff"),
+        (able, pelumi, now - timedelta(days=1, hours=3, minutes=50), "symptom", "vomiting", "vomited after supper", "After eating he was vomiting.", "staff"),
+        # Wing colour
+        (frank, abena, now - timedelta(hours=1), "mood", "mood_low", "tearful in the lounge", "Frank was tearful just now.", "staff"),
+        (margaret, abena, now - timedelta(hours=3), "meal", "appetite_low", "left her drink", "Margaret left her drink.", "staff"),
+        (joyce, goodluck, today + timedelta(hours=9), "meal", "eaten", "ate toast", "Joyce ate toast for breakfast.", "staff"),
+        (evelyn, pelumi, today + timedelta(hours=10), "sleep", "settled_late", "settled after ten", "Evelyn settled late after ten.", "staff"),
     ]
-    added = []
+    changed = False
     for person, logger, when, typ, subtype, detail, quote, source in extras:
-        if not logger or _has_quote(session, person.id, quote):
+        if not logger:
             continue
-        added.append(
+        existing = next(
+            (
+                e
+                for e in session.exec(select(CareEvent).where(CareEvent.person_id == person.id)).all()
+                if (e.raw_transcript or "") == quote
+            ),
+            None,
+        )
+        if existing:
+            existing.event_time = when
+            existing.logged_at = when
+            existing.type = typ
+            existing.subtype = subtype
+            existing.detail = detail
+            existing.logger_id = logger.id
+            existing.source = source
+            session.add(existing)
+            changed = True
+            continue
+        session.add(
             CareEvent(
                 person_id=person.id,
                 logger_id=logger.id,
@@ -521,10 +533,11 @@ def _apply_standout(session: Session, people: dict[str, PersonProfile], workers:
                 source=source,
             )
         )
-    if added:
-        session.add_all(added)
+        changed = True
+    if changed:
         session.commit()
-
+        recompute_flags(session, dad.id)
+        recompute_flags(session, able.id)
 
 def _backfill_person_ids(session: Session, dad: PersonProfile) -> None:
     changed = False

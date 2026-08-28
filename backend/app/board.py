@@ -63,7 +63,11 @@ def build_board(session: Session, since: Optional[datetime] = None, now: Optiona
         flag_count += len(flags)
         recent = [e for e in events if e.person_id == person.id and e.event_time >= start]
         recent.sort(key=lambda e: e.event_time, reverse=True)
+        owned = [e for e in events if e.person_id == person.id]
+        owned.sort(key=lambda e: e.event_time, reverse=True)
         last = recent[0] if recent else None
+        latest = owned[0] if owned else None
+        shown = last or latest
         logger = users.get(last.logger_id) if last and last.logger_id else None
         source = (last.source or "staff") if last else None
         logger_label = None
@@ -83,6 +87,9 @@ def build_board(session: Session, since: Optional[datetime] = None, now: Optiona
                 "event_id": last.id if last else None,
                 "logger": logger_label,
                 "source": source,
+                "last_type": shown.type if shown else None,
+                "last_subtype": shown.subtype if shown else None,
+                "last_at": shown.event_time.isoformat() if shown and shown.event_time else None,
                 "flags": [{"id": f.id, "subtype": f.subtype, "message": f.message} for f in flags],
                 "about": _about(person, recent),
                 "usual": person.usual or "",

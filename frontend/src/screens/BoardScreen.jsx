@@ -1,58 +1,75 @@
-import { wingFlagLine } from "../labels.js";
+import { personPhoto } from "../people.js";
+import { wingCardLine, wingCarryLine } from "../labels.js";
 
 export function BoardScreen({ board, canWrite, onOpenPerson, onHandOn }) {
   const people = board?.people || [];
-  const flagged = people.filter((row) => (row.flags || []).length);
-  const rest = people.filter((row) => !(row.flags || []).length);
+  const openCount = people.filter((row) => (row.flags || []).length).length;
+  const openLabel = openCount ? `${openCount} still open` : "Nothing still open";
 
   return (
-    <section className="space-y-5">
-      <h2 className="text-[1.75rem] font-bold leading-tight">Everyone</h2>
-      <p className="text-base leading-relaxed text-muted">
-        {canWrite ? "Tap a name to read. Speak to write." : "Tap a name to read."}
-      </p>
+    <section className="flex min-h-full flex-1 flex-col gap-3">
+      <div className="flex shrink-0 items-baseline justify-between gap-3">
+        <p className="text-[13px] text-muted">{openLabel}</p>
+        {canWrite && onHandOn ? (
+          <button type="button" className="text-[13px] font-semibold text-accent" onClick={onHandOn}>
+            Handover
+          </button>
+        ) : null}
+      </div>
 
-      {canWrite && onHandOn ? (
-        <button type="button" className="text-lg font-bold text-accent underline" onClick={onHandOn}>
-          Hand to the next worker
-        </button>
-      ) : null}
-
-      {flagged.length ? (
-        <div>
-          <h3 className="mb-2 text-lg font-bold">Still open for the next shift</h3>
-          <NameList people={flagged} onOpenPerson={onOpenPerson} showFlag />
-        </div>
-      ) : null}
-
-      <NameList
-        title={flagged.length ? "Everyone else" : null}
-        people={rest}
-        onOpenPerson={onOpenPerson}
-      />
-
-      {!people.length ? <p className="text-lg text-muted">No one is on this wing yet.</p> : null}
+      {people.length ? (
+        <ul className="grid min-h-0 flex-1 grid-cols-2 gap-2 [grid-auto-rows:minmax(4.75rem,1fr)]">
+          {people.map((row) => (
+            <li key={row.id} className="min-h-0">
+              <PersonCard row={row} onClick={() => onOpenPerson(row)} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-base text-muted">No one is on this wing yet.</p>
+      )}
     </section>
   );
 }
 
-function NameList({ title, people, onOpenPerson, showFlag }) {
-  if (!people.length) return null;
+function PersonCard({ row, onClick }) {
+  const photo = personPhoto(row.name);
+  const carry = wingCarryLine(row);
+  const line = wingCardLine(row);
+  const initial = (row.name || "?").trim().charAt(0);
+
   return (
-    <div>
-      {title ? <h3 className="mb-2 text-lg font-bold">{title}</h3> : null}
-      <ul className="space-y-3">
-        {people.map((row) => (
-          <li key={row.id}>
-            <button type="button" className="tap-card w-full py-5 text-left" onClick={() => onOpenPerson(row)}>
-              <span className="block text-2xl font-bold">{row.name}</span>
-              {showFlag && wingFlagLine(row) ? (
-                <span className="mt-1 block text-base leading-relaxed">{wingFlagLine(row)}</span>
-              ) : null}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <button
+      type="button"
+      className="relative flex h-full min-h-[4.75rem] w-full items-center gap-2 overflow-hidden rounded-xl border border-line bg-paper p-1.5 text-left"
+      onClick={onClick}
+      aria-label={`${row.name}, ${line}`}
+    >
+      {photo ? (
+        <img src={photo} alt="" className="h-full w-[4.5rem] shrink-0 self-stretch rounded-lg object-cover" />
+      ) : (
+        <span className="flex h-full w-[4.5rem] shrink-0 items-center justify-center self-stretch rounded-lg bg-dark-blue text-2xl font-bold text-paper">
+          {initial}
+        </span>
+      )}
+      <span className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-5">
+        <span className="block truncate text-[15px] font-bold leading-tight">{row.name}</span>
+        <span className={`mt-0.5 line-clamp-2 text-[12px] leading-snug ${carry ? "font-semibold text-ink" : "text-muted"}`}>
+          {line}
+        </span>
+      </span>
+      {carry ? (
+        <svg
+          className="absolute right-1.5 top-1.5 text-danger"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden
+        >
+          <path d="M6 3v18h2V14h8.5l-1.2-3.5L16.5 7H8V3H6z" />
+        </svg>
+      ) : null}
+    </button>
   );
 }

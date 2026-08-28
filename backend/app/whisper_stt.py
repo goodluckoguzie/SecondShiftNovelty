@@ -28,36 +28,46 @@ def warmup(model_size: str = "base") -> None:
         _model_size = model_size
 
 
-def transcribe_file(path: str | Path, model_size: str = "base") -> str:
+def _ensure(model_size: str):
     global _model, _model_size
     from .config import WHISPER_DEVICE
 
-    if _model is None or _model_size != model_size:
-        try:
-            _model = _load(model_size, WHISPER_DEVICE)
-            _model_size = model_size
-        except Exception:
-            _model = _load(model_size, "cpu")
-            _model_size = model_size
-
+    if _model is not None and _model_size == model_size:
+        return
     try:
-        segments, _info = _model.transcribe(
-            str(path),
-            language="en",
-            beam_size=1,
-            vad_filter=True,
-        )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        _model = _load(model_size, WHISPER_DEVICE)
+        _model_size = model_size
     except Exception:
         _model = _load(model_size, "cpu")
         _model_size = model_size
-        segments, _info = _model.transcribe(
-            str(path),
-            language="en",
-            beam_size=1,
-            vad_filter=True,
-        )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+
+
+def _run(path: str, vad: bool) -> str:
+    segments, _info = _model.transcribe(
+        path,
+        language="en",
+        beam_size=1,
+        vad_filter=vad,
+    )
+    return " ".join(segment.text.strip() for segment in segments).strip()
+
+
+def transcribe_file(path: str | Path, model_size: str = "base") -> str:
+    global _model, _model_size
+    _ensure(model_size)
+    source = str(path)
+    try:
+        text = _run(source, vad=True)
+        if not text:
+            text = _run(source, vad=False)
+        return text
+    except Exception:
+        _model = _load(model_size, "cpu")
+        _model_size = model_size
+        text = _run(source, vad=True)
+        if not text:
+            text = _run(source, vad=False)
+        return text
 
 
 def unload() -> None:

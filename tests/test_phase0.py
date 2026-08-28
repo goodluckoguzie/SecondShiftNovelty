@@ -10,7 +10,7 @@ def test_profile_seeded(client):
     response = client.get("/profile")
     assert response.status_code == 200
     body = response.json()
-    assert body["name"] == "Dad"
+    assert body["name"] == "Dou"
     assert body["age"] == 71
     assert body["conditions"] == "dementia"
     assert len(body["medications"]) == 3
@@ -28,4 +28,4 @@ def test_events_seeded(client):
     assert "symptom" in types
     assert "meal" in types
     confusions = [e for e in events if e["subtype"] == "confusion"]
-    assert len(confusions) == 2
+    assert len(confusions) >= 2

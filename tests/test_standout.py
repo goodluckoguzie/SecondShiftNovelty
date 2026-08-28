@@ -47,7 +47,7 @@ def test_board_lists_everyone_worst_first(client):
     names = [p["name"] for p in board["people"]]
     assert len(names) == 10
     assert set(names) == {
-        "Dad",
+        "Dou",
         "Able",
         "Margaret",
         "Harold",
@@ -58,7 +58,7 @@ def test_board_lists_everyone_worst_first(client):
         "Aisha",
         "George",
     }
-    assert board["people"][0]["name"] in {"Able", "Dad", "Frank"}
+    assert board["people"][0]["name"] in {"Able", "Dou", "Frank"}
     assert board["people"][-1]["score"] == 0
     assert "nurse" not in board or board.get("nurse") in (None, "")
     assert "Margaret" in board["risks"]
@@ -75,7 +75,7 @@ def test_stale_open_shift_does_not_hide_lines(client):
 def test_goodluck_is_assigned_dad(client):
     users = client.get("/users").json()
     goodluck = next(u for u in users if u["display_name"] == "Goodluck")
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     assert goodluck["assigned_person_id"] == dad["id"]
     abena = next(u for u in users if u["display_name"] == "Abena")
     assert abena.get("assigned_person_id") in (None, 0)
@@ -133,7 +133,7 @@ def test_corridor_splits_two_people(client):
 
 def test_ravi_logs_dad_not_able(client):
     ravi = _ravi(client)
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     able = _named(client, "Able")
     ok = client.post(
         "/log",
@@ -161,7 +161,7 @@ def test_ravi_logs_dad_not_able(client):
 
 
 def test_staff_cannot_set_from_home(client):
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     response = client.post(
         "/log",
         json={
@@ -176,11 +176,11 @@ def test_staff_cannot_set_from_home(client):
 
 def test_family_people_only_dad(client):
     people = client.get("/people", headers={"X-Demo-Role": "family"}).json()
-    assert [p["name"] for p in people] == ["Dad"]
+    assert [p["name"] for p in people] == ["Dou"]
 
 
 def test_gp_brief_has_two_authors(client):
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     brief = client.post("/briefs", json={"person_id": dad["id"]}).json()
     md = brief["markdown"]
     assert "## From the shift" in md
@@ -190,7 +190,7 @@ def test_gp_brief_has_two_authors(client):
 
 
 def test_hospital_return_flag_on_dad(client):
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     flags = client.get(f"/flags?person_id={dad['id']}").json()
     assert any(f["kind"] == "hospital_return" or f["subtype"] == "hospital_return" for f in flags)
 
@@ -213,7 +213,7 @@ def test_staff_login_needs_password(client):
 
 
 def test_family_login_needs_password(client):
-    dad = _named(client, "Dad")
+    dad = _named(client, "Dou")
     able = _named(client, "Able")
     bad = client.post("/family/login", json={"person_id": dad["id"], "password": "0000"})
     assert bad.status_code == 403

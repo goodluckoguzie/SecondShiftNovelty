@@ -8,7 +8,7 @@ def _able_id(client):
 
 def test_people_include_dad_and_able(client):
     names = {p["name"] for p in client.get("/people").json()}
-    assert {"Dad", "Able"} <= names
+    assert {"Dou", "Able"} <= names
     assert len(names) == 10
 
 

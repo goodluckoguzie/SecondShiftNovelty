@@ -15,13 +15,13 @@ export function Shell({ whoLabel, tab, onTab, hiddenTabs, children, overlay, onS
       />
       {viewOnly ? <p className="border-b border-line bg-paper px-5 py-2 text-sm font-bold text-muted">Read only</p> : null}
       <main className="relative min-h-0 flex-1">
-        <div className="h-full space-y-4 overflow-auto px-5 py-5">
+        <div className="h-full overflow-auto px-5 py-4">
           {onBack ? (
-            <button type="button" className="text-lg font-bold text-accent underline" onClick={onBack}>
+            <button type="button" className="mb-3 text-lg font-bold text-accent underline" onClick={onBack}>
               Back
             </button>
           ) : null}
-          {children}
+          <div className="flex min-h-full flex-col">{children}</div>
         </div>
         {overlay}
       </main>

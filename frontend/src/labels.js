@@ -72,6 +72,16 @@ export function clock(iso) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+export function cardWhen(iso) {
+  if (!iso) return "";
+  const at = new Date(iso);
+  const now = new Date();
+  const sameDay =
+    at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
+  if (sameDay) return clock(iso);
+  return at.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 export function eventFacts(event) {
   const slots = event?.slots || {};
   const parts = [];
@@ -103,6 +113,37 @@ export function wingFlagLine(row) {
   if (flag.subtype === "not_himself") return "Not himself this week.";
   if (flag.subtype === "appetite_low") return "Low appetite this week.";
   return flag.message || "";
+}
+
+export function wingCarryLine(row) {
+  const flag = (row?.flags || [])[0];
+  if (!flag) return "";
+  if (flag.subtype === "vomiting") return "sick after meals";
+  if (flag.subtype === "confusion") return "confusion this week";
+  if (flag.subtype === "medication") return "late tablets";
+  if (flag.subtype === "hospital_return") return "back from hospital";
+  if (flag.subtype === "not_himself") return "not himself";
+  if (flag.subtype === "appetite_low") return "low appetite";
+  return String(flag.message || "").split(".")[0].toLowerCase();
+}
+
+export function wingCardLine(row) {
+  const carry = wingCarryLine(row);
+  if (carry) return carry;
+  const when = cardWhen(row?.when || row?.last_at);
+  const label = eventLabel(row?.last_type, row?.last_subtype);
+  if (label) {
+    const short = label.toLowerCase();
+    return when ? `${short} · ${when}` : short;
+  }
+  const raw = String(row?.line || "")
+    .split(/[.!?]/)[0]
+    .trim();
+  if (raw) {
+    const clipped = raw.length > 36 ? `${raw.slice(0, 33)}…` : raw;
+    return when ? `${clipped} · ${when}` : clipped;
+  }
+  return "nothing repeating";
 }
 
 export function extractPattern(result, fallbackName) {

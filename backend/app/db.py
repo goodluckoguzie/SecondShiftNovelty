@@ -62,7 +62,9 @@ def resolve_person(session: Session, person_id: Optional[int] = None) -> PersonP
         if not person:
             raise HTTPException(404, "No person")
         return person
-    person = session.exec(select(PersonProfile).where(PersonProfile.name == "Dad")).first()
+    person = session.exec(select(PersonProfile).where(PersonProfile.name == "Dou")).first()
+    if not person:
+        person = session.exec(select(PersonProfile).where(PersonProfile.name == "Dad")).first()
     if not person:
         person = session.exec(select(PersonProfile)).first()
     if not person:

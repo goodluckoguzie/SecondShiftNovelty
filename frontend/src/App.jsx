@@ -25,6 +25,7 @@ export default function App() {
   const [board, setBoard] = useState({ people: [] });
   const [events, setEvents] = useState([]);
   const [flags, setFlags] = useState([]);
+  const [view, setView] = useState(null);
   const [chart, setChart] = useState({ days: [], dose_change: null });
   const [transcript, setTranscript] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -99,18 +100,39 @@ export default function App() {
       setProfile(null);
       setEvents([]);
       setFlags([]);
+      setView(null);
       return;
     }
-    const [p, e, f, c] = await Promise.all([
+    const viewPath = worker?.id ? `/person/view?user_id=${worker.id}` : "/person/view";
+    const [p, e, f, c, v] = await Promise.all([
       getJson("/profile"),
       getJson("/events"),
       getJson("/flags"),
       getJson("/patterns"),
+      getJson(viewPath),
     ]);
     setProfile(p);
     setEvents(e);
     setFlags(f);
     setChart(c);
+    setView(v);
+    const draftJoin = viewPath.includes("?") ? "&" : "?";
+    getJson(`${viewPath}${draftJoin}draft=true`)
+      .then((story) => {
+        setView((prev) =>
+          prev
+            ? {
+                ...prev,
+                week_summary: story.week_summary,
+                yesterday_summary: story.yesterday_summary,
+                what_changed: story.week_summary,
+                in_short: story.week_summary,
+                drafted: story.drafted,
+              }
+            : story,
+        );
+      })
+      .catch(() => {});
   }
   refreshRef.current = refresh;
   speakAboutRef.current = speakAbout;
@@ -218,15 +240,13 @@ export default function App() {
     setPersonId(person.id);
     setSpeakAbout(person.id);
     resetCapture();
-    setBusy(true);
+    setError("");
+    setTab("Person");
+    setStep("app");
     try {
       await refresh();
-      setTab("Person");
-      setStep("app");
     } catch (err) {
       setError(err.message);
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -261,6 +281,12 @@ export default function App() {
     setSlices([]);
     setSpeakOpen(true);
     startMic(next);
+  }
+
+  function retrySpeak() {
+    setError("");
+    setTranscript("");
+    startMic(speakAboutRef.current);
   }
 
   function speakAboutThisPerson() {
@@ -351,9 +377,9 @@ export default function App() {
         return;
       }
       if (data.type === "mic-heard") {
-        setBusy(true);
+        setBusy(false);
         setRecording(false);
-        setStatus("saving");
+        setStatus("check");
         if (data.transcript) {
           heardRef.current = data.transcript;
           setTranscript(data.transcript);
@@ -413,6 +439,7 @@ export default function App() {
 
   async function submitTranscript(text, about = speakAboutRef.current) {
     setBusy(true);
+    setStatus("saving");
     setError("");
     try {
       if (about === "wing") {
@@ -448,6 +475,7 @@ export default function App() {
         setPickOpen(true);
       } else {
         setError(message);
+        setStatus("check");
       }
     } finally {
       setBusy(false);
@@ -519,66 +547,29 @@ export default function App() {
         }
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         if (blob.size < 1000) {
-          setError("That was too short. Press to speak, talk, then press to stop.");
+          setError("That was too short. Speak again, or type what happened.");
           setRecording(false);
-          corridorRef.current = false;
+          setStatus("check");
           return;
         }
         setBusy(true);
         setStatus("writing");
         try {
           const heard = await transcribeAudio(blob);
+          if (cancelledRef.current) return;
           const text = (heard.transcript || "").trim();
-          if (!text) {
-            setError("Heard nothing. Speak again, then press Stop.");
-            return;
-          }
           setTranscript(text);
-          setStatus("saving");
-          const aboutNow = speakAboutRef.current;
-          if (corridorRef.current) {
-            try {
-              const result = await postJson("/log/corridor", {
-                transcript: text,
-                shift_id: shift?.id,
-                logger_id: worker?.id,
-                urgent,
-                use_heuristic: false,
-              });
-              confirmCorridor(result);
-              await refresh();
-              await finishSpeak(result);
-            } catch (err) {
-              const message = err.message || "";
-              if (/no names heard/i.test(message)) {
-                setPendingTranscript(text);
-                setSpeakOpen(false);
-                setPickHint("No name heard. Pick who this is about.");
-                setPickOpen(true);
-              } else {
-                throw err;
-              }
-            }
-          } else {
-            const result = await postJson("/log", {
-              transcript: text,
-              urgent,
-              use_heuristic: false,
-              shift_id: shift?.id,
-              logger_id: worker?.id,
-              person_id: aboutNow || getPersonId() || undefined,
-            });
-            result.transcript = text;
-            await applyLog(result);
-            await finishSpeak(result);
-          }
+          heardRef.current = text;
+          setError(text ? "" : "Heard nothing. Speak again, or type what happened.");
+          setStatus("check");
         } catch (err) {
-          if (!cancelledRef.current) setError(speakFailMessage(err));
+          if (!cancelledRef.current) {
+            setError(speakFailMessage(err));
+            setStatus("check");
+          }
         } finally {
           setBusy(false);
           setRecording(false);
-          setStatus("");
-          corridorRef.current = false;
         }
       };
       mediaRef.current = recorder;
@@ -787,12 +778,14 @@ export default function App() {
               busy={busy}
               status={status}
               aboutName={speakAbout === "wing" ? "" : profile?.name || "this person"}
+              whoName={whoLabel}
               error={error}
               transcript={transcript}
               setTranscript={setTranscript}
               onStop={stopMic}
               onCancel={cancelSpeak}
               onDiscardMic={discardMic}
+              onRetry={retrySpeak}
               onSaveTyped={() => submitTranscript(transcript)}
             />
           ) : null}
@@ -861,9 +854,11 @@ export default function App() {
           profile={profile}
           events={events}
           flags={flags}
-          chart={chart}
+          view={view}
           patternHit={patternHit}
           showPages={!isFamily}
+          canWrite={canWrite}
+          onRecord={canWrite ? speakAboutThisPerson : undefined}
           onOpenQuote={setQuote}
           onBrief={makeBrief}
         />

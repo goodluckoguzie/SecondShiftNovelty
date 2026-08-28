@@ -17,6 +17,7 @@ from .slots import pack_slots, unpack_slots
 from .models import CareEvent, MedicationSchedule, PatternFlag, PersonProfile, Shift, User
 from .ollama_client import ollama_available
 from .patterns import chart_payload, recompute_flags, similar_events
+from .person_view import ask_person_notes, build_person_view
 from .safety import is_emergency, strip_advice
 from .seed import seed_if_empty
 
@@ -57,6 +58,11 @@ class HandoverRequest(BaseModel):
     window: str = "72h"
     person_id: Optional[int] = None
     shift_id: Optional[int] = None
+
+
+class AskRequest(BaseModel):
+    question: str
+    person_id: Optional[int] = None
 
 
 class ShiftStartRequest(BaseModel):
@@ -273,6 +279,33 @@ def list_flags(person_id: Optional[int] = None, session: Session = Depends(get_s
     person = resolve_person(session, person_id)
     rows = session.exec(select(PatternFlag).where(PatternFlag.person_id == person.id)).all()
     return [_flag_out(session, r) for r in rows]
+
+
+@app.get("/person/view")
+def person_view(
+    person_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    draft: bool = False,
+    session: Session = Depends(get_session),
+):
+    person = resolve_person(session, person_id)
+    return build_person_view(session, person, user_id=user_id, draft=draft)
+
+
+@app.post("/person/ask")
+def person_ask(body: AskRequest, session: Session = Depends(get_session)):
+    person = resolve_person(session, body.person_id)
+    try:
+        result = ask_person_notes(session, person, body.question)
+    except ValueError as err:
+        raise HTTPException(400, str(err)) from err
+    except RuntimeError as err:
+        raise HTTPException(503, str(err)) from err
+    except Exception:
+        raise HTTPException(502, "Could not read the notes just now. Try again.") from None
+    result["answer"] = strip_advice(result["answer"])
+    result["disclaimer"] = "From the stored notes. Not a diagnosis."
+    return result
 
 
 @app.get("/patterns")

@@ -22,6 +22,30 @@ QUESTIONS_SYSTEM = """You draft 3 to 5 short questions a family carer can ask a 
 Use only the structured evidence provided. Do not diagnose. Output JSON: {"questions":["..."]}
 """
 
+ASK_SYSTEM = """You answer a UK support worker who is asking about one person.
+You are given Python counts plus that person's stored care notes.
+Use the counts. Do not recount. Do not invent food, times, or events.
+If the counts say 0 meal notes for the day they asked about, the answer is that they have not eaten according to the record. Ask the worker to confirm.
+Do not answer only "not in the notes" when the counts already cover the question. Zero logs for that day is the answer.
+Never diagnose, triage, or give medical advice.
+Cite notes by their id in cite_ids.
+Output JSON only: {"answer":"short UK English","cite_ids":[1],"in_notes":true}
+"""
+
+
+def _loads_json(content: str) -> dict[str, Any]:
+    text = (content or "").strip()
+    try:
+        data = json.loads(text)
+        return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            data = json.loads(text[start : end + 1])
+            return data if isinstance(data, dict) else {}
+        raise
+
 
 def chat_json(prompt: str, system: str, model: str | None = None, timeout: float = 120.0) -> dict[str, Any]:
     payload = {
@@ -37,7 +61,7 @@ def chat_json(prompt: str, system: str, model: str | None = None, timeout: float
         response = client.post(f"{OLLAMA_HOST}/api/chat", json=payload)
         response.raise_for_status()
         content = response.json()["message"]["content"]
-    return json.loads(content)
+    return _loads_json(content)
 
 
 def ollama_available() -> bool:

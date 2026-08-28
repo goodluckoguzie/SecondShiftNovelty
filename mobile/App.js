@@ -40,7 +40,7 @@ function AppScreen() {
   const extraRef = useRef({});
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
-  const source = useMemo(() => ({ uri: `${APP_URL}/?v=ss10` }), [tick]);
+  const source = useMemo(() => ({ uri: `${APP_URL}/?v=ss27` }), [tick]);
   const padTop = insets.top || (Platform.OS === "android" ? RNStatusBar.currentHeight || 28 : 0);
   const padBottom = insets.bottom || (Platform.OS === "android" ? 48 : 0);
 
@@ -110,25 +110,7 @@ function AppScreen() {
     const transcript = (heard.transcript || "").trim();
     if (!transcript) throw new Error("Heard nothing. Speak again, then press Stop.");
     tellWeb(webRef, { type: "mic-heard", transcript });
-    const role = extra.role || "support_worker";
-    const path = extra.mode === "corridor" ? "/api/log/corridor" : "/api/log";
-    const logRes = await fetch(`${APP_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Demo-Role": role },
-      body: JSON.stringify({
-        transcript,
-        urgent: Boolean(extra.urgent),
-        use_heuristic: false,
-        person_id: extra.person_id || null,
-        shift_id: extra.shift_id || null,
-        logger_id: extra.logger_id || null,
-      }),
-    });
-    const logText = await logRes.text();
-    if (!logRes.ok) throw new Error(apiMessage(logText, "Could not save the log."));
-    const result = JSON.parse(logText);
-    result.transcript = transcript;
-    tellWeb(webRef, { type: "mic-result", result, transcript });
+    return;
   }
 
   async function onWebMessage(event) {

@@ -8,7 +8,7 @@ export function HandOnSheet({ people, onOpen, onClose }) {
     <div className="speak-overlay" role="dialog" aria-modal="true" aria-label="Hand to the next worker">
       <div className="speak-sheet">
         <h2 className="text-2xl font-bold">Hand to the next worker</h2>
-        <p className="mt-2 text-lg text-muted">They will see this on the wing when they open Everyone. This is what was said, counted. Not a diagnosis.</p>
+        <p className="mt-2 text-lg text-muted">They will see this on the wing when they start. This is what was said, counted. Not a diagnosis.</p>
 
         {flagged.length ? (
           <ul className="mt-4 divide-y divide-line border-y border-line">
